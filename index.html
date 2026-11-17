@@ -1719,6 +1719,7 @@
     };
 
     let saveTimer = null;
+    const APP_STATE_STORAGE_KEY = `roadmap-sibuchiut-app-state-v1`;
 
     function setSyncStatus(text) {
       const el = document.getElementById(`sync-status`);
@@ -1727,14 +1728,38 @@
 
     async function persistState() {
       setSyncStatus(`שומר התקדמות...`);
+      let savedLocally = false;
+      let savedByNotebookApi = false;
+      const errors = [];
+
+      try {
+        window.localStorage.setItem(APP_STATE_STORAGE_KEY, JSON.stringify(appState));
+        savedLocally = true;
+      } catch (err) {
+        errors.push(err);
+      }
+
       try {
         if (window.notebookAppApi && typeof window.notebookAppApi.setAppState === `function`) {
           await window.notebookAppApi.setAppState(appState);
+          savedByNotebookApi = true;
         }
-        setSyncStatus(`מצב שמירה: מעודכן`);
       } catch (err) {
-        setSyncStatus(`מצב שמירה: מקומי`);
+        errors.push(err);
       }
+
+      if (savedByNotebookApi) {
+        setSyncStatus(`מצב שמירה: מעודכן`);
+      } else if (savedLocally) {
+        setSyncStatus(`נשמר בדפדפן הזה בלבד`);
+      } else {
+        setSyncStatus(`השמירה נכשלה`);
+      }
+
+      if (errors.length) {
+        console.error(`Unable to save all app state destinations.`, errors);
+      }
+      return savedLocally || savedByNotebookApi;
     }
 
     function schedulePersist() {
@@ -2230,15 +2255,15 @@
       schedulePersist();
     }
 
-    function saveNotesNow() {
+    async function saveNotesNow() {
       const textarea = document.getElementById(`personal-notes-input`);
       const toast = document.getElementById(`notes-save-toast`);
       if (textarea) {
         appState.notes = textarea.value;
       }
-      persistState();
+      const saved = await persistState();
       if (toast) {
-        toast.textContent = `ההערות נשמרו בהצלחה`;
+        toast.textContent = saved ? `ההערות נשמרו בדפדפן הזה` : `שמירת ההערות נכשלה`;
         setTimeout(function() {
           toast.textContent = ``;
         }, 2500);
@@ -2375,24 +2400,41 @@
     /* ============================================================
        10. INITIALIZATION
        ============================================================ */
+    function applySavedState(saved) {
+      if (!saved || typeof saved !== `object`) return;
+      if (saved.selectedClass && COMPLEXITY_CLASSES[saved.selectedClass]) appState.selectedClass = saved.selectedClass;
+      if (typeof saved.selectedTopicId === `number`) appState.selectedTopicId = saved.selectedTopicId;
+      if (typeof saved.viewMode === `string`) appState.viewMode = saved.viewMode;
+      if (typeof saved.clusterFilter === `string`) appState.clusterFilter = saved.clusterFilter;
+      if (Array.isArray(saved.completedTopics)) appState.completedTopics = saved.completedTopics;
+      if (saved.fcRatings && typeof saved.fcRatings === `object`) appState.fcRatings = saved.fcRatings;
+      if (Array.isArray(saved.checkedExamItems)) appState.checkedExamItems = saved.checkedExamItems;
+      if (typeof saved.notes === `string`) appState.notes = saved.notes;
+    }
+
     async function initApp() {
+      let restoredLocalState = false;
+      try {
+        const localState = window.localStorage.getItem(APP_STATE_STORAGE_KEY);
+        if (localState) {
+          applySavedState(JSON.parse(localState));
+          restoredLocalState = true;
+        }
+      } catch (e) {
+        console.error(`Unable to load locally saved app state.`, e);
+        setSyncStatus(`לא ניתן לטעון שמירה מקומית`);
+      }
+
       try {
         if (window.notebookAppApi && typeof window.notebookAppApi.getAppState === `function`) {
           const saved = await window.notebookAppApi.getAppState();
-          if (saved && typeof saved === `object`) {
-            if (saved.selectedClass && COMPLEXITY_CLASSES[saved.selectedClass]) appState.selectedClass = saved.selectedClass;
-            if (typeof saved.selectedTopicId === `number`) appState.selectedTopicId = saved.selectedTopicId;
-            if (typeof saved.viewMode === `string`) appState.viewMode = saved.viewMode;
-            if (typeof saved.clusterFilter === `string`) appState.clusterFilter = saved.clusterFilter;
-            if (Array.isArray(saved.completedTopics)) appState.completedTopics = saved.completedTopics;
-            if (saved.fcRatings && typeof saved.fcRatings === `object`) appState.fcRatings = saved.fcRatings;
-            if (Array.isArray(saved.checkedExamItems)) appState.checkedExamItems = saved.checkedExamItems;
-            if (typeof saved.notes === `string`) appState.notes = saved.notes;
-          }
+          applySavedState(saved);
         }
       } catch (e) {
-        // Proceed with default initial state
+        console.error(`Unable to load app state from notebookAppApi.`, e);
       }
+
+      if (restoredLocalState) setSyncStatus(`התקדמות נטענה מהדפדפן הזה`);
 
       const clusterSelect = document.getElementById(`topic-cluster-select`);
       if (clusterSelect) clusterSelect.value = appState.clusterFilter;
