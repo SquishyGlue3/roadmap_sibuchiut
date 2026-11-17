@@ -408,6 +408,26 @@
       resize: vertical;
       line-height: 1.55;
     }
+    .cloud-sync-panel {
+      display: grid;
+      gap: var(--space-sm);
+      margin-top: var(--space-md);
+      padding: var(--space-md);
+      background: var(--surface-container-low);
+      border: var(--card-border);
+      border-radius: var(--rounded-lg);
+    }
+    .cloud-sync-fields {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+      gap: var(--space-sm);
+      align-items: end;
+    }
+    .cloud-sync-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+    }
 
     .nav-strip {
       display: flex;
@@ -874,6 +894,30 @@
         <button type="button" class="btn btn-accent-soft" onclick="exportStudySummary()">ייצוא סיכום התקדמות (.txt)</button>
         <button type="button" class="btn btn-danger-ghost" id="btn-reset-progress" onclick="handleResetProgress(this)">איפוס התקדמות</button>
       </div>
+
+      <section class="cloud-sync-panel" aria-labelledby="cloud-sync-heading">
+        <div>
+          <h2 class="section-heading" id="cloud-sync-heading" style="font-size:var(--subhead-size);">סנכרון התקדמות בין מכשירים</h2>
+          <p style="margin:var(--space-xs) 0 0;">צרו חשבון והתחברו אליו מכל מכשיר. ההתקדמות וההערות יישמרו בחשבון הפרטי שלכם. השמירה המקומית בדפדפן תמשיך לפעול גם ללא התחברות.</p>
+        </div>
+        <div class="cloud-sync-fields">
+          <div class="field-group">
+            <label class="field-label" for="cloud-email">כתובת אימייל</label>
+            <input id="cloud-email" class="input-control" type="email" autocomplete="email" dir="ltr">
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="cloud-password">סיסמה (לפחות 6 תווים)</label>
+            <input id="cloud-password" class="input-control" type="password" autocomplete="current-password" dir="ltr">
+          </div>
+        </div>
+        <div class="cloud-sync-actions">
+          <button type="button" class="btn btn-primary btn-sm" id="cloud-create-account" onclick="createCloudAccount()">יצירת חשבון</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="cloud-sign-in" onclick="signInToCloud()">התחברות</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="cloud-reset-password" onclick="resetCloudPassword()">איפוס סיסמה</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="cloud-sign-out" onclick="signOutFromCloud()" hidden>התנתקות</button>
+        </div>
+        <span class="dossier-meta" id="cloud-sync-message" role="status" aria-live="polite">הסנכרון בענן לא הוגדר עדיין.</span>
+      </section>
     </header>
 
     <!-- KPI SUMMARY ROW -->
@@ -1244,6 +1288,9 @@
 
   <api-shim></api-shim>
 
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.18.2/dist/katex.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.18.2/dist/contrib/auto-render.min.js"></script>
 
@@ -1702,6 +1749,13 @@
     /* ============================================================
        2. APPLICATION STATE & PERSISTENCE
        ============================================================ */
+    const FIREBASE_CONFIG = {
+      apiKey: ``,
+      authDomain: ``,
+      projectId: ``,
+      appId: ``
+    };
+
     let appState = {
       selectedClass: `DL`,
       selectedTopicId: 1,
@@ -1720,16 +1774,262 @@
 
     let saveTimer = null;
     const APP_STATE_STORAGE_KEY = `roadmap-sibuchiut-app-state-v1`;
+    let cloudAuth = null;
+    let cloudDb = null;
+    let currentCloudUser = null;
+    let cloudSyncReady = false;
+    let cloudStateUnsubscribe = null;
 
     function setSyncStatus(text) {
       const el = document.getElementById(`sync-status`);
       if (el) el.textContent = text;
     }
 
+    function setCloudMessage(text) {
+      const el = document.getElementById(`cloud-sync-message`);
+      if (el) el.textContent = text;
+    }
+
+    function firebaseConfigIsReady() {
+      return Boolean(
+        FIREBASE_CONFIG.apiKey &&
+        FIREBASE_CONFIG.authDomain &&
+        FIREBASE_CONFIG.projectId &&
+        FIREBASE_CONFIG.appId
+      );
+    }
+
+    function getCloudErrorMessage(error) {
+      console.error(`Firebase cloud sync failed.`, error);
+      const messages = {
+        "auth/email-already-in-use": `כתובת האימייל כבר רשומה. התחברו לחשבון הקיים.`,
+        "auth/invalid-email": `כתובת האימייל אינה תקינה.`,
+        "auth/invalid-credential": `האימייל או הסיסמה אינם נכונים.`,
+        "auth/weak-password": `הסיסמה חייבת להכיל לפחות 6 תווים.`,
+        "auth/too-many-requests": `נחסמו ניסיונות רבים מדי. נסו שוב מאוחר יותר.`,
+        "auth/network-request-failed": `אין חיבור לרשת. בדקו את החיבור ונסו שוב.`,
+        "permission-denied": `הגישה לענן נדחתה. בדקו את כללי Firestore המתועדים ב-README.`
+      };
+      return messages[error && error.code] || `הפעולה נכשלה: ${error && error.message ? error.message : `שגיאה לא ידועה`}`;
+    }
+
+    function updateCloudAuthUI(user) {
+      const signedIn = Boolean(user);
+      [`cloud-create-account`, `cloud-sign-in`, `cloud-reset-password`].forEach(function(id) {
+        const button = document.getElementById(id);
+        if (button) button.hidden = signedIn;
+      });
+      const signOutButton = document.getElementById(`cloud-sign-out`);
+      if (signOutButton) signOutButton.hidden = !signedIn;
+      const emailInput = document.getElementById(`cloud-email`);
+      if (emailInput && user && user.email) emailInput.value = user.email;
+    }
+
+    function setupFirebaseCloud() {
+      if (!firebaseConfigIsReady()) {
+        setCloudMessage(`כדי להפעיל סנכרון, יש להגדיר Firebase לפי הוראות README. השמירה המקומית פעילה.`);
+        return;
+      }
+      if (typeof firebase === `undefined`) {
+        setCloudMessage(`ספריית Firebase לא נטענה. בדקו את חיבור האינטרנט וחסימת סקריפטים.`);
+        return;
+      }
+
+      try {
+        const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
+        cloudAuth = app.auth();
+        cloudDb = app.firestore();
+        cloudAuth.onAuthStateChanged(handleCloudAuthState);
+      } catch (error) {
+        setCloudMessage(getCloudErrorMessage(error));
+      }
+    }
+
+    function getCloudFormValues() {
+      const emailInput = document.getElementById(`cloud-email`);
+      const passwordInput = document.getElementById(`cloud-password`);
+      return {
+        email: emailInput ? emailInput.value.trim() : ``,
+        password: passwordInput ? passwordInput.value : ``
+      };
+    }
+
+    async function createCloudAccount() {
+      if (!cloudAuth) {
+        setCloudMessage(`סנכרון הענן עדיין לא הוגדר. פעלו לפי הוראות README.`);
+        return;
+      }
+      const credentials = getCloudFormValues();
+      try {
+        await cloudAuth.createUserWithEmailAndPassword(credentials.email, credentials.password);
+        setCloudMessage(`החשבון נוצר. טוען את ההתקדמות לענן...`);
+      } catch (error) {
+        setCloudMessage(getCloudErrorMessage(error));
+      }
+    }
+
+    async function signInToCloud() {
+      if (!cloudAuth) {
+        setCloudMessage(`סנכרון הענן עדיין לא הוגדר. פעלו לפי הוראות README.`);
+        return;
+      }
+      const credentials = getCloudFormValues();
+      try {
+        await cloudAuth.signInWithEmailAndPassword(credentials.email, credentials.password);
+        setCloudMessage(`התחברתם. טוען את ההתקדמות לענן...`);
+      } catch (error) {
+        setCloudMessage(getCloudErrorMessage(error));
+      }
+    }
+
+    async function resetCloudPassword() {
+      if (!cloudAuth) {
+        setCloudMessage(`סנכרון הענן עדיין לא הוגדר. פעלו לפי הוראות README.`);
+        return;
+      }
+      const credentials = getCloudFormValues();
+      try {
+        await cloudAuth.sendPasswordResetEmail(credentials.email);
+        setCloudMessage(`נשלח אימייל לאיפוס הסיסמה, אם הכתובת רשומה.`);
+      } catch (error) {
+        setCloudMessage(getCloudErrorMessage(error));
+      }
+    }
+
+    async function signOutFromCloud() {
+      if (!cloudAuth) return;
+      try {
+        await cloudAuth.signOut();
+      } catch (error) {
+        setCloudMessage(getCloudErrorMessage(error));
+      }
+    }
+
+    function stopCloudStateListener() {
+      if (cloudStateUnsubscribe) {
+        cloudStateUnsubscribe();
+        cloudStateUnsubscribe = null;
+      }
+    }
+
+    function startCloudStateListener(user) {
+      stopCloudStateListener();
+      const stateDocument = cloudDb.collection(`userStates`).doc(user.uid);
+      cloudStateUnsubscribe = stateDocument.onSnapshot(function(snapshot) {
+        if (!snapshot.exists || !snapshot.data().state) return;
+        const cloudState = snapshot.data().state;
+        const localSnapshot = getSyncStateSnapshot(appState);
+        const cloudSnapshot = getSyncStateSnapshot(cloudState);
+        if (JSON.stringify(localSnapshot) === JSON.stringify(cloudSnapshot)) return;
+
+        if (hasMeaningfulProgress(appState)) {
+          const useCloudState = window.confirm(
+            `ההתקדמות בענן השתנתה במכשיר אחר.\\n\\n` +
+            `אישור: לטעון את נתוני הענן למכשיר הזה.\\n` +
+            `ביטול: לשמור את נתוני המכשיר הזה בענן.`
+          );
+          if (!useCloudState) {
+            persistState();
+            return;
+          }
+        }
+
+        applySavedState(cloudState);
+        renderAppState();
+        setCloudMessage(`התקדמות עודכנה מהענן.`);
+      }, function(error) {
+        setCloudMessage(getCloudErrorMessage(error));
+      });
+    }
+
+    function getSyncStateSnapshot(state) {
+      return {
+        selectedClass: state.selectedClass,
+        selectedTopicId: state.selectedTopicId,
+        viewMode: state.viewMode,
+        clusterFilter: state.clusterFilter,
+        completedTopics: state.completedTopics,
+        fcRatings: state.fcRatings,
+        checkedExamItems: state.checkedExamItems,
+        notes: state.notes
+      };
+    }
+
+    function hasMeaningfulProgress(state) {
+      return Boolean(
+        (state.completedTopics && state.completedTopics.length) ||
+        (state.fcRatings && Object.keys(state.fcRatings).length) ||
+        (state.checkedExamItems && state.checkedExamItems.length) ||
+        state.notes ||
+        state.selectedClass !== `DL` ||
+        state.selectedTopicId !== 1 ||
+        state.viewMode !== `all` ||
+        state.clusterFilter !== `all`
+      );
+    }
+
+    async function handleCloudAuthState(user) {
+      currentCloudUser = user;
+      cloudSyncReady = false;
+      updateCloudAuthUI(user);
+
+      if (!user) {
+        stopCloudStateListener();
+        setCloudMessage(firebaseConfigIsReady()
+          ? `לא מחוברים. ההתקדמות נשמרת בדפדפן זה בלבד עד להתחברות.`
+          : `הסנכרון בענן לא הוגדר עדיין. השמירה המקומית פעילה.`);
+        return;
+      }
+
+      setCloudMessage(`מחוברים כ-${user.email || `משתמש Firebase`}. טוען נתונים...`);
+      try {
+        const localState = getSyncStateSnapshot(appState);
+        const localHasProgress = hasMeaningfulProgress(appState);
+        const stateDocument = await cloudDb.collection(`userStates`).doc(user.uid).get();
+        if (!currentCloudUser || currentCloudUser.uid !== user.uid) return;
+
+        if (stateDocument.exists && stateDocument.data().state) {
+          const cloudState = stateDocument.data().state;
+          const localDiffers = JSON.stringify(localState) !== JSON.stringify(getSyncStateSnapshot(cloudState));
+          if (localHasProgress && localDiffers) {
+            const useCloudState = window.confirm(
+              `נמצאו נתונים גם במכשיר הזה וגם בחשבון הענן.\\n\\n` +
+              `אישור: לטעון את נתוני הענן ולהחליף את ההתקדמות המקומית.\\n` +
+              `ביטול: להעלות את נתוני המכשיר הזה ולדרוס את נתוני הענן.`
+            );
+            if (useCloudState) {
+              applySavedState(cloudState);
+              renderAppState();
+            } else {
+              cloudSyncReady = true;
+              await persistState();
+              startCloudStateListener(user);
+              setCloudMessage(`נתוני המכשיר הועלו לענן.`);
+              return;
+            }
+          } else {
+            applySavedState(cloudState);
+            renderAppState();
+          }
+        } else {
+          setCloudMessage(`לא נמצאו נתונים בענן. שומר את ההתקדמות הקיימת בחשבון...`);
+        }
+
+        cloudSyncReady = true;
+        await persistState();
+        startCloudStateListener(user);
+        setCloudMessage(`הנתונים מסונכרנים בחשבון ${user.email || `שלכם`}.`);
+      } catch (error) {
+        setCloudMessage(getCloudErrorMessage(error));
+        setSyncStatus(`הסנכרון בענן נכשל`);
+      }
+    }
+
     async function persistState() {
       setSyncStatus(`שומר התקדמות...`);
       let savedLocally = false;
       let savedByNotebookApi = false;
+      let savedByCloud = false;
       const errors = [];
 
       try {
@@ -1748,7 +2048,23 @@
         errors.push(err);
       }
 
-      if (savedByNotebookApi) {
+      if (currentCloudUser && cloudSyncReady) {
+        try {
+          const stateDocument = cloudDb.collection(`userStates`).doc(currentCloudUser.uid);
+          await stateDocument.set({
+            state: JSON.parse(JSON.stringify(appState)),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          savedByCloud = true;
+        } catch (err) {
+          errors.push(err);
+          setCloudMessage(getCloudErrorMessage(err));
+        }
+      }
+
+      if (savedByCloud) {
+        setSyncStatus(`נשמר ומסונכרן בענן`);
+      } else if (savedByNotebookApi) {
         setSyncStatus(`מצב שמירה: מעודכן`);
       } else if (savedLocally) {
         setSyncStatus(`נשמר בדפדפן הזה בלבד`);
@@ -1759,7 +2075,7 @@
       if (errors.length) {
         console.error(`Unable to save all app state destinations.`, errors);
       }
-      return savedLocally || savedByNotebookApi;
+      return savedLocally || savedByNotebookApi || savedByCloud;
     }
 
     function schedulePersist() {
@@ -2263,7 +2579,9 @@
       }
       const saved = await persistState();
       if (toast) {
-        toast.textContent = saved ? `ההערות נשמרו בדפדפן הזה` : `שמירת ההערות נכשלה`;
+        toast.textContent = saved
+          ? (currentCloudUser && cloudSyncReady ? `ההערות נשמרו וסונכרנו בענן` : `ההערות נשמרו בדפדפן הזה`)
+          : `שמירת ההערות נכשלה`;
         setTimeout(function() {
           toast.textContent = ``;
         }, 2500);
@@ -2412,6 +2730,24 @@
       if (typeof saved.notes === `string`) appState.notes = saved.notes;
     }
 
+    function renderAppState() {
+      const clusterSelect = document.getElementById(`topic-cluster-select`);
+      if (clusterSelect) clusterSelect.value = appState.clusterFilter;
+
+      const notesInput = document.getElementById(`personal-notes-input`);
+      if (notesInput) notesInput.value = appState.notes;
+
+      selectComplexityClass(appState.selectedClass);
+      setViewMode(appState.viewMode);
+      renderTopicsList();
+      renderPatterns();
+      renderWorkedQuestions();
+      renderFlashcards();
+      renderExamChecklist();
+      updateKPIs();
+      renderMathSafe(document.body);
+    }
+
     async function initApp() {
       let restoredLocalState = false;
       try {
@@ -2436,27 +2772,16 @@
 
       if (restoredLocalState) setSyncStatus(`התקדמות נטענה מהדפדפן הזה`);
 
-      const clusterSelect = document.getElementById(`topic-cluster-select`);
-      if (clusterSelect) clusterSelect.value = appState.clusterFilter;
-
       const notesInput = document.getElementById(`personal-notes-input`);
       if (notesInput) {
-        notesInput.value = appState.notes;
         notesInput.addEventListener(`input`, function() {
           appState.notes = notesInput.value;
           schedulePersist();
         });
       }
 
-      selectComplexityClass(appState.selectedClass);
-      setViewMode(appState.viewMode);
-      renderTopicsList();
-      renderPatterns();
-      renderWorkedQuestions();
-      renderFlashcards();
-      renderExamChecklist();
-      updateKPIs();
-      renderMathSafe(document.body);
+      renderAppState();
+      setupFirebaseCloud();
 
       if (window.notebookAppApi && typeof window.notebookAppApi.notifyAppReady === `function`) {
         window.notebookAppApi.notifyAppReady();
