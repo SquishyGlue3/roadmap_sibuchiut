@@ -1,0 +1,2427 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="artifact-type" content="dashboard">
+  <meta name="design-style" content="briefing">
+  <title>מרכז למידה אינטראקטיבי — סיבוכיות חישוב (7081110)</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;600;700&family=Geist+Mono:wght@400;500;600&family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.18.2/dist/katex.min.css">
+
+  <style>
+    :root {
+      color-scheme: light;
+
+      /* Page and surfaces: warm stone-white paper (Briefing) */
+      --background: #faf9f5;
+      --surface-container-low: #ffffff;
+      --surface-container: #f1efe8;
+      --surface-container-high: #e6e2d6;
+
+      /* Ink */
+      --on-surface: #17181a;
+      --on-surface-variant: #56585c;
+
+      /* Rules */
+      --outline: #17181a;
+      --outline-variant: #dedad0;
+      --border-control: #c8c4b8;
+
+      /* Accents */
+      --primary: #17181a;
+      --on-primary: #faf9f5;
+      --primary-container: #f2b705;
+      --on-primary-container: #17181a;
+      --secondary: #1f4e5f;
+      --secondary-soft: #e6eff2;
+      --tertiary: #785008;
+      --tertiary-soft: #f5e6c4;
+      --error: #b42318;
+      --error-soft: #fbeae8;
+      --on-error: #ffffff;
+
+      /* Semantic */
+      --positive: #2b6e52;
+      --positive-soft: #e6f2ec;
+      --warning: #b36b00;
+      --warning-soft: #fdf2dc;
+
+      /* Data series */
+      --data-1: #1f4e5f;
+      --data-2: #d99000;
+      --data-3: #2b6e52;
+      --data-4: #b84a39;
+      --data-context: #c4bfb2;
+
+      /* Focus ring */
+      --focus: #1f4e5f;
+
+      /* Fonts */
+      --font-headline: 'Frank Ruhl Libre', serif;
+      --font-body: 'Heebo', sans-serif;
+      --font-label: 'Heebo', 'Geist Mono', monospace;
+      --font-mono: 'Geist Mono', monospace;
+
+      /* Shape */
+      --rounded: 0.25rem;
+      --rounded-lg: 0.375rem;
+      --rounded-full: 0.25rem;
+
+      /* Style effects */
+      --section-rule: 1.5px solid var(--outline);
+      --card-border: 1px solid var(--outline-variant);
+      --badge-radius: 2px;
+      --heading-tracking: 0;
+      --label-tracking: 0.06em;
+
+      /* Type scale (Dashboard / Study Hub) */
+      --display-size: clamp(1.85rem, 1.4rem + 1.5vw, 2.5rem);
+      --headline-size: clamp(1.35rem, 1.15rem + 0.6vw, 1.65rem);
+      --subhead-size: clamp(1.0625rem, 1rem + 0.25vw, 1.2rem);
+      --body-size: clamp(0.95rem, 0.92rem + 0.15vw, 1rem);
+      --label-size: 0.75rem;
+
+      /* Spacing scale (4pt base) */
+      --space-xs: 0.25rem;
+      --space-sm: 0.5rem;
+      --space-md: 1rem;
+      --space-lg: 1.5rem;
+      --space-xl: 2.5rem;
+      --space-2xl: 4rem;
+
+      /* Motion */
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+      --dur-micro: 120ms;
+      --dur-short: 220ms;
+      --dur-long: 420ms;
+    }
+
+    /* Base reset */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      overflow-x: clip;
+      margin: 0;
+      padding: 0;
+      background: var(--background);
+      color: var(--on-surface);
+      font-family: var(--font-body);
+      font-size: var(--body-size);
+      line-height: 1.6;
+    }
+    header { position: static !important; }
+
+    button, input, select, textarea {
+      font-family: inherit;
+      font-size: inherit;
+    }
+
+    :focus-visible {
+      outline: 2.5px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    .page-grid {
+      display: grid;
+      gap: var(--space-lg);
+      padding: var(--space-lg);
+      max-width: 1260px;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+    .page-grid * { min-width: 0; }
+
+    /* KaTeX RTL safety */
+    .katex {
+      direction: ltr;
+      unicode-bidi: isolate;
+      font-size: 1.02em;
+    }
+    .katex-display {
+      direction: ltr;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: var(--space-xs) 0;
+    }
+
+    /* Briefing Dossier Treatments */
+    .dossier-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-sm);
+      border-bottom: var(--section-rule);
+      padding-bottom: var(--space-sm);
+      margin-bottom: var(--space-md);
+    }
+    .dossier-bar-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+    .dossier-pill {
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: var(--label-size);
+      padding: var(--space-xs) var(--space-sm);
+      border-radius: var(--badge-radius);
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+    }
+    .dossier-meta {
+      font-family: var(--font-label);
+      font-size: var(--label-size);
+      color: var(--on-surface-variant);
+      font-weight: 500;
+    }
+    .mono-latin {
+      font-family: var(--font-mono);
+      letter-spacing: var(--label-tracking);
+      text-transform: uppercase;
+      direction: ltr;
+      unicode-bidi: isolate;
+    }
+
+    .title {
+      font-family: var(--font-headline);
+      font-size: var(--display-size);
+      font-weight: 700;
+      line-height: 1.12;
+      color: var(--on-surface);
+      margin: 0;
+    }
+    .standfirst {
+      font-family: var(--font-body);
+      font-size: var(--subhead-size);
+      font-weight: 600;
+      color: var(--secondary);
+      margin: var(--space-xs) 0 0;
+      max-width: 72ch;
+    }
+
+    .section-heading {
+      font-family: var(--font-headline);
+      font-size: var(--headline-size);
+      font-weight: 700;
+      line-height: 1.18;
+      margin: 0;
+      color: var(--on-surface);
+    }
+
+    .figure-card {
+      background: var(--surface-container-low);
+      border: var(--card-border);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-md) var(--space-lg);
+    }
+    .figure-card .value {
+      font-family: var(--font-headline);
+      font-size: clamp(1.65rem, 1.35rem + 0.8vw, 2.15rem);
+      font-weight: 700;
+      font-variant-numeric: lining-nums tabular-nums;
+      line-height: 1.1;
+      color: var(--on-surface);
+    }
+    .figure-label {
+      font-size: var(--label-size);
+      color: var(--on-surface-variant);
+      font-weight: 600;
+      margin-bottom: var(--space-xs);
+    }
+    .figure-sub {
+      font-size: 0.84rem;
+      color: var(--on-surface-variant);
+      margin-top: var(--space-xs);
+    }
+
+    .index-num {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      font-size: var(--label-size);
+      color: var(--secondary);
+      background: var(--surface-container);
+      padding: var(--space-xs) var(--space-sm);
+      border-radius: var(--badge-radius);
+      direction: ltr;
+      display: inline-block;
+    }
+
+    .aside-box {
+      background: var(--surface-container);
+      border-top: var(--section-rule);
+      padding: var(--space-md) var(--space-lg);
+      border-radius: 0 0 var(--rounded-lg) var(--rounded-lg);
+    }
+
+    /* Header & KPI Row */
+    .hero-header {
+      padding-bottom: var(--space-sm);
+    }
+    .header-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-sm);
+      margin-top: var(--space-md);
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr));
+      gap: var(--space-md);
+    }
+    .kpi-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-top: 3px solid var(--secondary);
+    }
+    .kpi-card.kpi-gold {
+      border-top-color: var(--primary-container);
+    }
+    .kpi-card.kpi-green {
+      border-top-color: var(--positive);
+    }
+    .progress-track {
+      height: 6px;
+      background: var(--surface-container-high);
+      border-radius: var(--badge-radius);
+      margin-top: var(--space-sm);
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--secondary);
+      transition: width var(--dur-short) var(--ease-out);
+    }
+    .progress-fill.positive {
+      background: var(--positive);
+    }
+
+    /* Buttons & Controls */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-xs);
+      min-height: 44px;
+      padding: 0 var(--space-md);
+      border-radius: var(--rounded);
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out), box-shadow var(--dur-micro) var(--ease-out);
+      text-decoration: none;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: var(--on-primary);
+    }
+    .btn-primary:hover {
+      background: var(--secondary);
+    }
+    .btn-secondary {
+      background: var(--surface-container-low);
+      color: var(--on-surface);
+      border-color: var(--border-control);
+    }
+    .btn-secondary:hover {
+      background: var(--surface-container);
+    }
+    .btn-danger-ghost {
+      background: var(--surface-container-low);
+      color: var(--error);
+      border-color: var(--border-control);
+    }
+    .btn-danger-ghost:hover {
+      background: var(--error-soft);
+    }
+    .btn-accent-soft {
+      background: var(--tertiary-soft);
+      color: var(--tertiary);
+      border-color: var(--outline-variant);
+    }
+    .btn-accent-soft:hover {
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+    }
+    .btn:active {
+      transform: translateY(1px);
+    }
+    .btn[disabled] {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-sm {
+      min-height: 36px;
+      padding: 0 var(--space-sm);
+      font-size: 0.84rem;
+    }
+
+    /* Sticky Workspace Navigation & Search */
+    .control-deck {
+      background: var(--surface-container-low);
+      border: var(--card-border);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-md);
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+      gap: var(--space-md);
+      align-items: end;
+    }
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xs);
+    }
+    .field-label {
+      font-size: var(--label-size);
+      font-weight: 700;
+      color: var(--on-surface);
+    }
+    .input-control, .select-control, .textarea-control {
+      width: 100%;
+      min-height: 44px;
+      padding: var(--space-sm) var(--space-md);
+      background: var(--background);
+      color: var(--on-surface);
+      border: 1px solid var(--border-control);
+      border-radius: var(--rounded);
+      transition: border-color var(--dur-micro) var(--ease-out), background-color var(--dur-micro) var(--ease-out);
+    }
+    .select-control {
+      padding-left: var(--space-xl);
+    }
+    .textarea-control {
+      min-height: 110px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    .nav-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      align-items: center;
+      margin-top: var(--space-xs);
+    }
+    .nav-chip {
+      min-height: 40px;
+      padding: 0 var(--space-md);
+      border-radius: var(--rounded);
+      border: 1px solid var(--border-control);
+      background: var(--surface-container-low);
+      color: var(--on-surface);
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out);
+    }
+    .nav-chip:hover {
+      background: var(--surface-container);
+    }
+    .nav-chip.is-active {
+      background: var(--primary);
+      color: var(--on-primary);
+      border-color: var(--primary);
+    }
+
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      align-items: center;
+    }
+    .filter-pill {
+      min-height: 36px;
+      padding: 0 var(--space-sm);
+      border-radius: var(--rounded);
+      border: 1px solid var(--outline-variant);
+      background: var(--surface-container);
+      color: var(--on-surface-variant);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .filter-pill.is-active {
+      background: var(--secondary);
+      color: var(--on-primary);
+      border-color: var(--secondary);
+    }
+
+    /* Section visibility & spacing */
+    .hub-section {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+    .is-hidden {
+      display: none !important;
+    }
+
+    /* Interactive Complexity Map (SVG + Inspector) */
+    .map-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.95fr);
+      gap: var(--space-lg);
+      align-items: start;
+    }
+    .svg-stage {
+      background: var(--surface-container-low);
+      border: var(--card-border);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-md);
+      min-height: 360px;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+    .complexity-svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .class-node {
+      cursor: pointer;
+      transition: opacity var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out);
+    }
+    .class-node rect {
+      fill: var(--surface-container);
+      stroke: var(--secondary);
+      stroke-width: 1.5;
+      transition: fill var(--dur-micro) var(--ease-out), stroke var(--dur-micro) var(--ease-out);
+    }
+    .class-node.node-rand rect {
+      stroke: var(--data-3);
+    }
+    .class-node.node-circuit rect {
+      stroke: var(--data-2);
+    }
+    .class-node.is-selected rect {
+      fill: var(--primary-container);
+      stroke: var(--primary);
+      stroke-width: 2.5;
+    }
+    .class-node:hover rect {
+      fill: var(--secondary-soft);
+    }
+    .class-node.is-selected:hover rect {
+      fill: var(--primary-container);
+    }
+    .class-node text {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      fill: var(--on-surface);
+      pointer-events: none;
+    }
+    .inclusion-edge {
+      stroke: var(--on-surface-variant);
+      stroke-width: 1.5;
+      fill: none;
+    }
+    .inclusion-edge.strict-edge {
+      stroke: var(--data-4);
+      stroke-width: 2;
+      stroke-dasharray: 4 3;
+    }
+
+    /* Master-Detail Topics Explorer */
+    .topics-workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.38fr);
+      gap: var(--space-lg);
+      align-items: start;
+    }
+    .topic-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+    .topic-item {
+      width: 100%;
+      text-align: right;
+      background: var(--surface-container-low);
+      border: var(--card-border);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-md);
+      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-sm);
+      transition: background-color var(--dur-micro) var(--ease-out), box-shadow var(--dur-micro) var(--ease-out);
+    }
+    .topic-item:hover {
+      background: var(--surface-container);
+    }
+    .topic-item.is-selected {
+      background: var(--surface-container-low);
+      box-shadow: inset -4px 0 0 var(--primary-container), 0 0 0 1.5px var(--primary);
+    }
+    .topic-item-main {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xs);
+    }
+    .topic-item-title {
+      font-family: var(--font-headline);
+      font-weight: 700;
+      font-size: 1.08rem;
+      color: var(--on-surface);
+    }
+    .topic-item-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-xs);
+      align-items: center;
+    }
+    .tag-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px var(--space-sm);
+      border-radius: var(--rounded);
+      font-size: 0.76rem;
+      font-weight: 600;
+      background: var(--tertiary-soft);
+      color: var(--tertiary);
+    }
+    .tag-chip.done {
+      background: var(--positive-soft);
+      color: var(--positive);
+    }
+    .tag-chip.slate {
+      background: var(--secondary-soft);
+      color: var(--secondary);
+    }
+
+    .topic-detail-panel {
+      background: var(--surface-container-low);
+      border: var(--card-border);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+    .detail-block {
+      border-top: 1px solid var(--outline-variant);
+      padding-top: var(--space-md);
+    }
+    .detail-block h3 {
+      font-family: var(--font-headline);
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--secondary);
+      margin: 0 0 var(--space-sm);
+    }
+    .detail-list {
+      margin: 0;
+      padding-right: var(--space-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+    .exam-tip-callout {
+      background: var(--surface-container);
+      border-right: 4px solid var(--primary-container);
+      padding: var(--space-md);
+      border-radius: var(--rounded);
+    }
+
+    /* Exam Patterns & Worked Proofs */
+    .patterns-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+      gap: var(--space-md);
+    }
+    .pattern-card {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+      justify-content: space-between;
+    }
+    .pattern-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-sm);
+    }
+    .pattern-title {
+      font-family: var(--font-headline);
+      font-weight: 700;
+      font-size: 1.2rem;
+      margin: 0;
+      color: var(--on-surface);
+    }
+
+    .worked-exam-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+    .worked-card {
+      background: var(--surface-container-low);
+      border: var(--card-border);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+    .worked-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      margin-top: var(--space-xs);
+    }
+    .reveal-box {
+      background: var(--surface-container);
+      border-right: 3px solid var(--secondary);
+      padding: var(--space-md);
+      border-radius: var(--rounded);
+      margin-top: var(--space-xs);
+    }
+    .reveal-box.solution-box {
+      background: var(--background);
+      border: 1px solid var(--outline-variant);
+      border-right: 4px solid var(--positive);
+    }
+
+    /* Flashcards */
+    .flashcard-workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.85fr);
+      gap: var(--space-lg);
+      align-items: start;
+    }
+    .flashcard-stage {
+      background: var(--surface-container-low);
+      border: var(--card-border);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-xl) var(--space-lg);
+      min-height: 290px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: var(--space-lg);
+      cursor: pointer;
+      transition: background-color var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out);
+    }
+    .flashcard-stage.is-flipped {
+      background: var(--surface-container);
+      box-shadow: inset 0 4px 0 var(--secondary);
+    }
+    .flashcard-face-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+    .flashcard-content {
+      font-size: 1.12rem;
+      line-height: 1.65;
+      color: var(--on-surface);
+    }
+    .flashcard-controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    /* Reference Table & Exam Rules */
+    .data-table-wrap {
+      overflow-x: auto;
+      background: var(--surface-container-low);
+      border: var(--card-border);
+      border-radius: var(--rounded-lg);
+    }
+    table.briefing-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: right;
+      font-size: 0.92rem;
+    }
+    table.briefing-table th {
+      background: var(--surface-container);
+      color: var(--on-surface);
+      font-weight: 700;
+      padding: var(--space-sm) var(--space-md);
+      border-bottom: var(--section-rule);
+      white-space: nowrap;
+    }
+    table.briefing-table td {
+      padding: var(--space-sm) var(--space-md);
+      border-bottom: 1px solid var(--outline-variant);
+      vertical-align: top;
+    }
+    table.briefing-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .checklist-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: var(--space-lg);
+    }
+    .check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-sm);
+      padding: var(--space-sm) 0;
+      border-bottom: 1px solid var(--outline-variant);
+      cursor: pointer;
+    }
+    .check-row:last-child {
+      border-bottom: none;
+    }
+    .check-row input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin-top: 2px;
+      accent-color: var(--secondary);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .status-toast {
+      font-size: 0.85rem;
+      color: var(--positive);
+      font-weight: 600;
+      min-height: 1.4em;
+    }
+
+    footer.sources-footer {
+      border-top: var(--section-rule);
+      padding-top: var(--space-md);
+      margin-top: var(--space-lg);
+      color: var(--on-surface-variant);
+      font-size: 0.88rem;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xs);
+    }
+
+    @media (max-width: 900px) {
+      .map-layout,
+      .topics-workspace,
+      .flashcard-workspace,
+      .checklist-grid,
+      .control-deck {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .page-grid {
+        padding: var(--space-md);
+        gap: var(--space-md);
+      }
+      .figure-card,
+      .topic-detail-panel,
+      .worked-card {
+        padding: var(--space-md);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-grid">
+    <!-- MASTHEAD -->
+    <header class="hero-header">
+      <div class="dossier-bar">
+        <div class="dossier-bar-group">
+          <span class="dossier-pill">מדריך למידה אינטראקטיבי</span>
+          <span class="dossier-meta">קורס <bdi dir="ltr">7081110-01</bdi> · ד"ר ערן עמרי · חומר עזר פתוח (מחברת + ספר)</span>
+        </div>
+        <div class="dossier-bar-group">
+          <span class="dossier-meta" id="sync-status">מצב שמירה: מוכן</span>
+        </div>
+      </div>
+
+      <h1 class="title">סיבוכיות חישובית — מרכז הלמידה וההכנה לבחינה</h1>
+      <p class="standfirst">
+        איחוד מלא של מחברת הקורס (12 השיעורים), ספר הקורס (<bdi dir="ltr">Arora &amp; Barak / Goldreich</bdi>), המטלות ומאגר מבחני המועדים ופתרונותיהם (תשע"ו–תשפ"ה).
+      </p>
+
+      <div class="header-actions">
+        <button type="button" class="btn btn-primary" onclick="jumpToSection('section-topics')">סייר ב-12 נושאי הקורס</button>
+        <button type="button" class="btn btn-secondary" onclick="jumpToSection('section-patterns')">דפוסי מבחן ופתרונות מודרכים</button>
+        <button type="button" class="btn btn-secondary" onclick="jumpToSection('section-flashcards')">כרטיסיות חזרה פעילה</button>
+        <button type="button" class="btn btn-accent-soft" onclick="exportStudySummary()">ייצוא סיכום התקדמות (.txt)</button>
+        <button type="button" class="btn btn-danger-ghost" id="btn-reset-progress" onclick="handleResetProgress(this)">איפוס התקדמות</button>
+      </div>
+    </header>
+
+    <!-- KPI SUMMARY ROW -->
+    <section aria-label="מדדי מוכנות והתקדמות">
+      <div class="kpi-grid">
+        <article class="figure-card kpi-card kpi-green">
+          <div class="figure-label">שליטה בנושאי הסילבוס</div>
+          <div class="value" id="kpi-topics">0 / 12</div>
+          <div class="figure-sub" id="kpi-topics-pct">0% מהשיעורים סומנו כמוכנים</div>
+          <div class="progress-track"><div class="progress-fill positive" id="bar-topics" style="width: 0%;"></div></div>
+        </article>
+
+        <article class="figure-card kpi-card kpi-gold">
+          <div class="figure-label">כרטיסיות חזרה פעילה</div>
+          <div class="value" id="kpi-cards">0 / 18</div>
+          <div class="figure-sub" id="kpi-cards-sub">כרטיסיות שסומנו כ"יודע/ת"</div>
+          <div class="progress-track"><div class="progress-fill" id="bar-cards" style="width: 0%;"></div></div>
+        </article>
+
+        <article class="figure-card kpi-card">
+          <div class="figure-label">רשימת תיוג לבחינה</div>
+          <div class="value" id="kpi-checklist">0 / 8</div>
+          <div class="figure-sub">כללי הוכחה, רדוקציות וטכניקות מפתח</div>
+          <div class="progress-track"><div class="progress-fill" id="bar-checklist" style="width: 0%;"></div></div>
+        </article>
+
+        <article class="figure-card kpi-card">
+          <div class="figure-label">מפרט הבחינה בקורס</div>
+          <div class="value">3 שעות · 105–109 נק'</div>
+          <div class="figure-sub">מחברת וספר מותרים · עד עמוד לסעיף · "לא יודע/ת" = 20%</div>
+        </article>
+      </div>
+    </section>
+
+    <!-- NAVIGATION & GLOBAL FILTER DECK -->
+    <section class="control-deck" aria-label="ניווט וחיפוש">
+      <div class="field-group">
+        <label class="field-label" for="global-search">חיפוש מהיר בנושאים, משפטים, מחלקות ושאלות מבחן</label>
+        <input type="search" id="global-search" class="input-control" placeholder="לדוגמה: סאביץ', ריפוד, NL, קארפ-ליפטון, BPP, PCP, מעגלים..." oninput="handleSearchInput(this.value)">
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="topic-cluster-select">סינון לפי אשכול נושאים</label>
+        <select id="topic-cluster-select" class="select-control" onchange="handleClusterChange(this.value)">
+          <option value="all">כל אשכולות הקורס (12 שיעורים)</option>
+          <option value="basics">יסודות, רדוקציות והיררכיות זמן</option>
+          <option value="space">סיבוכיות מקום, NL ואימרמן-סלפצ'ני</option>
+          <option value="circuits">ההיררכיה הפולינומית, מעגלים ורשתות</option>
+          <option value="random">חישוב אקראי, הוכחות אינטראקטיביות, קירוב ו-PCP</option>
+        </select>
+      </div>
+
+      <div style="grid-column: 1 / -1;">
+        <div class="nav-strip" role="tablist" aria-label="מצבי תצוגה">
+          <button type="button" class="nav-chip is-active" data-view="all" onclick="setViewMode('all')">תצוגה מלאה (הכל)</button>
+          <button type="button" class="nav-chip" data-view="map" onclick="setViewMode('map')">מפת מחלקות הסיבוכיות</button>
+          <button type="button" class="nav-chip" data-view="topics" onclick="setViewMode('topics')">12 שיעורי הקורס</button>
+          <button type="button" class="nav-chip" data-view="patterns" onclick="setViewMode('patterns')">דפוסי מבחן ופתרונות</button>
+          <button type="button" class="nav-chip" data-view="flashcards" onclick="setViewMode('flashcards')">כרטיסיות תרגול</button>
+          <button type="button" class="nav-chip" data-view="rules" onclick="setViewMode('rules')">נוסחאון, כללי בחינה והערות</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 1: INTERACTIVE COMPLEXITY INCLUSION MAP -->
+    <section id="section-map" class="hub-section" data-section="map">
+      <div class="dossier-bar">
+        <div class="dossier-bar-group">
+          <span class="dossier-pill">מפת המחלקות</span>
+          <h2 class="section-heading">מפת ההכלות וההפרדות הידועות בקורס</h2>
+        </div>
+        <span class="dossier-meta">לחצו על כל מחלקה בתרשים לצפייה בהגדרה, תכונות סגירות וקשרים</span>
+      </div>
+
+      <div class="map-layout">
+        <div class="svg-stage">
+          <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; align-items:center;">
+            <span class="figure-label" style="margin:0;">תרשים היררכיית המחלקות (קו רציף: הכלה <bdi dir="ltr">⊆</bdi> · קו מקווקו אדום: הכלה ממש מוכחת <bdi dir="ltr">⊊</bdi>)</span>
+          </div>
+          <svg viewBox="0 0 760 390" class="complexity-svg" role="img" aria-label="תרשים הכלות של מחלקות סיבוכיות">
+            <!-- Edges -->
+            <!-- Main spine: DL -> NL=coNL -> P -> NP/coNP -> PH -> PSPACE=IP -> EXP -> NEXP -->
+            <line x1="95" y1="335" x2="185" y2="335" class="inclusion-edge" />
+            <line x1="275" y1="335" x2="345" y2="335" class="inclusion-edge" />
+            <line x1="405" y1="335" x2="455" y2="290" class="inclusion-edge" />
+            <line x1="405" y1="335" x2="455" y2="365" class="inclusion-edge" />
+            <line x1="540" y1="290" x2="590" y2="230" class="inclusion-edge" />
+            <line x1="540" y1="365" x2="590" y2="230" class="inclusion-edge" />
+            <line x1="635" y1="190" x2="635" y2="145" class="inclusion-edge" />
+            <line x1="635" y1="95" x2="635" y2="55" class="inclusion-edge" />
+            <!-- Strict separation edges -->
+            <path d="M 375 315 C 375 210, 520 75, 585 45" class="inclusion-edge strict-edge" />
+            <path d="M 60 315 C 60 220, 290 120, 575 120" class="inclusion-edge strict-edge" />
+            <!-- Randomized branch from P to BPP to PP to PSPACE -->
+            <line x1="375" y1="315" x2="310" y2="245" class="inclusion-edge" />
+            <line x1="310" y1="205" x2="310" y2="165" class="inclusion-edge" />
+            <line x1="360" y1="145" x2="575" y2="125" class="inclusion-edge" />
+            <line x1="310" y1="225" x2="210" y2="225" class="inclusion-edge" />
+            <!-- P to P/poly and BPP to P/poly -->
+            <line x1="355" y1="315" x2="180" y2="155" class="inclusion-edge" />
+            <line x1="270" y1="205" x2="180" y2="155" class="inclusion-edge" />
+            <!-- NP to PP and PSPACE -->
+            <line x1="470" y1="270" x2="345" y2="160" class="inclusion-edge" />
+
+            <!-- Nodes -->
+            <g class="class-node is-selected" data-class="DL" onclick="selectComplexityClass('DL')">
+              <rect x="20" y="315" width="75" height="40" rx="4" />
+              <text x="57" y="340" text-anchor="middle" font-size="14">DL (L)</text>
+            </g>
+
+            <g class="class-node" data-class="NL" onclick="selectComplexityClass('NL')">
+              <rect x="185" y="315" width="90" height="40" rx="4" />
+              <text x="230" y="340" text-anchor="middle" font-size="14">NL=coNL</text>
+            </g>
+
+            <g class="class-node" data-class="P" onclick="selectComplexityClass('P')">
+              <rect x="345" y="315" width="60" height="40" rx="4" />
+              <text x="375" y="340" text-anchor="middle" font-size="15">P</text>
+            </g>
+
+            <g class="class-node" data-class="NP" onclick="selectComplexityClass('NP')">
+              <rect x="455" y="270" width="85" height="40" rx="4" />
+              <text x="497" y="295" text-anchor="middle" font-size="14">NP</text>
+            </g>
+
+            <g class="class-node" data-class="coNP" onclick="selectComplexityClass('coNP')">
+              <rect x="455" y="345" width="85" height="40" rx="4" />
+              <text x="497" y="370" text-anchor="middle" font-size="14">coNP</text>
+            </g>
+
+            <g class="class-node" data-class="PH" onclick="selectComplexityClass('PH')">
+              <rect x="590" y="190" width="90" height="40" rx="4" />
+              <text x="635" y="215" text-anchor="middle" font-size="14">PH</text>
+            </g>
+
+            <g class="class-node" data-class="PSPACE" onclick="selectComplexityClass('PSPACE')">
+              <rect x="575" y="95" width="120" height="50" rx="4" />
+              <text x="635" y="118" text-anchor="middle" font-size="13">PSPACE =</text>
+              <text x="635" y="135" text-anchor="middle" font-size="13">NPSPACE = IP</text>
+            </g>
+
+            <g class="class-node" data-class="EXP" onclick="selectComplexityClass('EXP')">
+              <rect x="585" y="15" width="100" height="40" rx="4" />
+              <text x="635" y="40" text-anchor="middle" font-size="14">EXP / NEXP</text>
+            </g>
+
+            <g class="class-node node-rand" data-class="ZPP" onclick="selectComplexityClass('ZPP')">
+              <rect x="115" y="205" width="95" height="40" rx="4" />
+              <text x="162" y="230" text-anchor="middle" font-size="13">ZPP=RP∩coRP</text>
+            </g>
+
+            <g class="class-node node-rand" data-class="BPP" onclick="selectComplexityClass('BPP')">
+              <rect x="260" y="205" width="100" height="40" rx="4" />
+              <text x="310" y="230" text-anchor="middle" font-size="14">BPP</text>
+            </g>
+
+            <g class="class-node node-rand" data-class="PP" onclick="selectComplexityClass('PP')">
+              <rect x="260" y="125" width="100" height="40" rx="4" />
+              <text x="310" y="150" text-anchor="middle" font-size="14">PP ⊆ P^#SAT</text>
+            </g>
+
+            <g class="class-node node-circuit" data-class="Ppoly" onclick="selectComplexityClass('Ppoly')">
+              <rect x="75" y="115" width="120" height="40" rx="4" />
+              <text x="135" y="140" text-anchor="middle" font-size="14">P/poly</text>
+            </g>
+          </svg>
+        </div>
+
+        <aside class="figure-card" id="class-inspector" aria-live="polite">
+          <!-- Populated dynamically by selectComplexityClass -->
+        </aside>
+      </div>
+    </section>
+
+    <!-- SECTION 2: 12 COURSE TOPICS MASTER-DETAIL -->
+    <section id="section-topics" class="hub-section" data-section="topics">
+      <div class="dossier-bar">
+        <div class="dossier-bar-group">
+          <span class="dossier-pill">מפת השיעורים</span>
+          <h2 class="section-heading">12 נושאי הקורס — סיכום ממוקד ודגשי מבחן</h2>
+        </div>
+        <span class="dossier-meta" id="topics-count-label">מציג 12 מתוך 12 שיעורים</span>
+      </div>
+
+      <div class="topics-workspace">
+        <div class="topic-list" id="topic-list-container">
+          <!-- Populated by JS -->
+        </div>
+        <article class="topic-detail-panel" id="topic-detail-container" aria-live="polite">
+          <!-- Populated by JS -->
+        </article>
+      </div>
+    </section>
+
+    <!-- SECTION 3: EXAM PATTERNS & WORKED EXAM QUESTIONS -->
+    <section id="section-patterns" class="hub-section" data-section="patterns">
+      <div class="dossier-bar">
+        <div class="dossier-bar-group">
+          <span class="dossier-pill">דפוסי מבחן</span>
+          <h2 class="section-heading">דפוסי שאלות חוזרים מבחינות 2016–2025 ופתרונות מודרכים</h2>
+        </div>
+        <span class="dossier-meta">מבוסס על מבחני ערן עמרי ופתרונות הקורס הרשמיים</span>
+      </div>
+
+      <div class="patterns-grid" id="patterns-grid-container">
+        <!-- Populated by JS -->
+      </div>
+
+      <div class="dossier-bar" style="margin-top:var(--space-md);">
+        <div class="dossier-bar-group">
+          <span class="dossier-pill">פתרון מודרך</span>
+          <h3 class="section-heading" style="font-size:1.35rem;">שאלות מבחן אמיתיות עם רמז והוכחה שלב-אחר-שלב</h3>
+        </div>
+        <div class="filter-row" id="worked-filter-row">
+          <button type="button" class="filter-pill is-active" onclick="filterWorkedQuestions('all', this)">הכל</button>
+          <button type="button" class="filter-pill" onclick="filterWorkedQuestions('היררכיה וריפוד', this)">היררכיה וריפוד</button>
+          <button type="button" class="filter-pill" onclick="filterWorkedQuestions('חיפוש ואקראיות', this)">חיפוש ואקראיות</button>
+          <button type="button" class="filter-pill" onclick="filterWorkedQuestions('NL ומקום', this)">NL ומקום</button>
+          <button type="button" class="filter-pill" onclick="filterWorkedQuestions('מעגלים', this)">מעגלים</button>
+        </div>
+      </div>
+
+      <div class="worked-exam-list" id="worked-exam-container">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- SECTION 4: INTERACTIVE FLASHCARDS -->
+    <section id="section-flashcards" class="hub-section" data-section="flashcards">
+      <div class="dossier-bar">
+        <div class="dossier-bar-group">
+          <span class="dossier-pill">תרגול אקטיבי</span>
+          <h2 class="section-heading">כרטיסיות חזרה — הגדרות, משפטים וטריקים להוכחה</h2>
+        </div>
+        <div class="filter-row">
+          <button type="button" class="filter-pill is-active" id="fc-filter-all" onclick="setFlashcardFilter('all')">כל הכרטיסיות</button>
+          <button type="button" class="filter-pill" id="fc-filter-review" onclick="setFlashcardFilter('review')">רק לחזרה</button>
+        </div>
+      </div>
+
+      <div class="flashcard-workspace">
+        <div>
+          <div class="flashcard-stage" id="flashcard-stage" tabindex="0" role="button" aria-label="לחצו להפיכת הכרטיסייה" onclick="flipFlashcard()" onkeydown="handleFlashcardKey(event)">
+            <div class="flashcard-face-label">
+              <span class="index-num" id="fc-counter">01 / 18</span>
+              <span class="tag-chip slate" id="fc-topic-tag">שיעור 1</span>
+              <span class="tag-chip" id="fc-status-tag">ממתינה לחזרה</span>
+            </div>
+            <div class="flashcard-content" id="fc-body">
+              <!-- Front/Back content -->
+            </div>
+            <div class="dossier-meta" id="fc-hint-footer">לחצו על הכרטיסייה או על המקש Enter כדי לחשוף את התשובה / ההוכחה</div>
+          </div>
+
+          <div class="flashcard-controls" style="margin-top:var(--space-md);">
+            <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap;">
+              <button type="button" class="btn btn-secondary" onclick="prevFlashcard()">הקודמת</button>
+              <button type="button" class="btn btn-secondary" onclick="flipFlashcard()">הפוך כרטיסייה</button>
+              <button type="button" class="btn btn-secondary" onclick="nextFlashcard()">הבאה</button>
+            </div>
+            <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap;">
+              <button type="button" class="btn btn-danger-ghost" onclick="rateFlashcard('review')">לשנן שוב</button>
+              <button type="button" class="btn btn-primary" onclick="rateFlashcard('known')">יודע/ת היטב</button>
+            </div>
+          </div>
+        </div>
+
+        <aside class="aside-box">
+          <div class="figure-label">מאגר הכרטיסיות לפי מצב</div>
+          <p style="margin-top:0; font-size:0.92rem;">
+            בחרו כרטיסייה ישירות מהרשימה או עבדו ברצף. הסימון נשמר אוטומטית בין כניסות.
+          </p>
+          <div id="fc-mini-index" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:var(--space-sm);">
+            <!-- Populated by JS -->
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- SECTION 5: REFERENCE SHEET, EXAM RULES & PERSONAL NOTES -->
+    <section id="section-rules" class="hub-section" data-section="rules">
+      <div class="dossier-bar">
+        <div class="dossier-bar-group">
+          <span class="dossier-pill">נוסחאון וכללי זהב</span>
+          <h2 class="section-heading">טבלת משפטים לניסוח מהיר, הוראות הבחינה והערות אישיות</h2>
+        </div>
+      </div>
+
+      <div class="data-table-wrap">
+        <table class="briefing-table">
+          <thead>
+            <tr>
+              <th>שם המשפט / תוצאה</th>
+              <th>ניסוח מדויק להסתמכות במבחן</th>
+              <th>מתי משתמשים בו?</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>היררכיית זמן דטרמיניסטית</strong><br><span class="dossier-meta">Hartmanis–Stearns</span></td>
+              <td>עבור $f,g$ פונקציות <bdi dir="ltr">time-constructible</bdi> המקיימות $f(n)\log f(n) = o(g(n))$, מתקיים $\text{DTIME}(f(n)) \subsetneq \text{DTIME}(g(n))$.</td>
+              <td>להוכחת הפרדות חדות (כגון $\text{P} \subsetneq \text{EXP}$, אי-סגירות $\text{DTIME}(2^n)$ עם ריפוד).</td>
+            </tr>
+            <tr>
+              <td><strong>משפט סאביץ'</strong><br><span class="dossier-meta">Savitch</span></td>
+              <td>לכל $S(n) \ge \log n$ פונקציית מקום <bdi dir="ltr">space-constructible</bdi>: $\text{NSPACE}(S(n)) \subseteq \text{DSPACE}(S^2(n))$. בפרט $\text{PSPACE} = \text{NPSPACE}$.</td>
+              <td>אלגוריתם רקורסיבי לבדיקת מסלול בגרף קונפיגורציות באורך $\le 2^{cS(n)}$ ע"י חצייה לשניים.</td>
+            </tr>
+            <tr>
+              <td><strong>משפט אימרמן-סלפצ'ני</strong><br><span class="dossier-meta">Immerman–Szelepcsényi</span></td>
+              <td>לכל $S(n) \ge \log n$: $\text{NSPACE}(S(n)) = \text{coNSPACE}(S(n))$, ובפרט $\text{NL} = \text{coNL}$.</td>
+              <td>הוכחה ששפות משלימות (כמו $\overline{\text{Odd-}st\text{-CON}}$ או <bdi dir="ltr">EXACT_PATH</bdi>) הן ב-$\text{NL}$ ע"י ספירה אינדוקטיבית.</td>
+            </tr>
+            <tr>
+              <td><strong>חישוב מעגלים לשפות ב-P</strong><br><span class="dossier-meta">$\text{P} \subseteq \text{P/poly}$</span></td>
+              <td>לכל מ"ט דטרמיניסטית בזמן $T(n)$ קיימת משפחת מעגלים $\{C_n\}$ בגודל $O(T(n)^2)$.</td>
+              <td>הוכחה ע"י מכונת טיורינג <bdi dir="ltr">oblivious</bdi> (זמן $O(T\log T)$) ותמונות מצב לוקאליות.</td>
+            </tr>
+            <tr>
+              <td><strong>משפט קארפ-ליפטון</strong><br><span class="dossier-meta">Karp–Lipton</span></td>
+              <td>אם $\text{NP} \subseteq \text{P/poly}$, אזי ההיררכיה הפולינומית קורסת לרמה השנייה: $\text{PH} = \Sigma_2^P$.</td>
+              <td>מראה שמעגלים פולינומיים ל-$\text{SAT}$ יקריסו את $\text{PH}$ (ע"י כמת $\exists$ למעגל + $\forall$ לוודא שהמעגל פותר באמצעות חיפוש עצמי).</td>
+            </tr>
+            <tr>
+              <td><strong>משפט אדלמן</strong><br><span class="dossier-meta">$\text{BPP} \subseteq \text{P/poly}$</span></td>
+              <td>כל שפה ב-$\text{BPP}$ ניתנת להכרעה ע"י מעגלים מגודל פולינומי (ובמילים אחרות ע"י מכונה דטרמיניסטית עם מחרוזת עצה אחידה לכל אורך $n$).</td>
+              <td>הגברת שגיאה אל מתחת ל-$2^{-n}$ בעזרת צ'רנוף, ואז יוניון באונד על כל $2^n$ הקלטים באורך $n$.</td>
+            </tr>
+            <tr>
+              <td><strong>משפט שמיר / $\text{coNP} \subseteq \text{IP}$</strong></td>
+              <td>$\text{IP} = \text{PSPACE}$. בפרט, בעזרת אריתמטיזציה ופרוטוקול <bdi dir="ltr">Sum-Check</bdi> מתקיים $\text{coNP} \subseteq \text{IP}$.</td>
+              <td>הוכחות אינטראקטיביות מול פולינומים מעל שדה סופי $\mathbb{F}_p$ ($p > 2^n$).</td>
+            </tr>
+            <tr>
+              <td><strong>משפט ה-PCP</strong></td>
+              <td>$\text{NP} = \text{PCP}(O(\log n), O(1))$.</td>
+              <td>שקול לקושי הקירוב של $\text{MAX-3SAT}$ (אין קירוב $7/8 + \varepsilon$ אלא אם $\text{P}=\text{NP}$) ושל $\text{MAX-CLIQUE}$.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="checklist-grid">
+        <div class="figure-card">
+          <div class="figure-label">אסטרטגיית בחינה וצ'ק-ליסט (מהוראות המבחנים)</div>
+          <div id="exam-checklist-container">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <div class="figure-card">
+          <div class="field-group">
+            <label class="field-label" for="personal-notes-input">מחברת הערות אישית למבחן (נשמרת אוטומטית)</label>
+            <textarea id="personal-notes-input" class="textarea-control" placeholder="רשמו כאן ניסוחי משפטים שתרצו לזכור בעל פה, דגשים להוכחות ספציפיות, או שאלות ממטלות לחזור עליהן..."></textarea>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:var(--space-sm); gap:var(--space-sm); flex-wrap:wrap;">
+            <span class="status-toast" id="notes-save-toast"></span>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="saveNotesNow()">שמור הערות</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="sources-footer">
+      <div><strong>מקורות הסיכום:</strong> מחברת סיבוכיות חישוב המלאה (12 השיעורים, כולל תרשימי שיעור), סילבוס הקורס 7081110, מטלה 2, ספר הקורס (<bdi dir="ltr">Arora &amp; Barak; Oded Goldreich</bdi>), ומאגר מבחני המועדים ופתרונותיהם של ד"ר ערן עמרי (תשע"ו–תשפ"ה).</div>
+      <div>מומלץ לעבור על ההגדרות המדויקות לפני הסתמכות עליהן בכתב הבחינה — בבחינה מותר להסתמך על כל משפט מהכיתה בתנאי שמנסחים אותו בבירור, ואין להסתמך על תרגילי הבית.</div>
+    </footer>
+  </div>
+
+  <api-shim></api-shim>
+
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.18.2/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.18.2/dist/contrib/auto-render.min.js"></script>
+
+  <script>
+    /* ============================================================
+       1. COURSE DATA (GROUNDED IN PROVIDED SOURCES)
+       ============================================================ */
+    const COMPLEXITY_CLASSES = {
+      DL: {
+        name: `DL (נקראת גם L)`,
+        formal: `$\\text{DSPACE}(\\log n)$`,
+        desc: `אוסף כל השפות המוכרעות ע"י מכונת טיורינג דטרמיניסטית המשתמשת ב-$O(\\log n)$ תאי זיכרון בסרטי העבודה בלבד.`,
+        examples: `חיבור וכפל מספרים בביט ה-$i$, בדיקת זוגיות מספר האחדים (<bdi dir="ltr">Parity</bdi>), בעיית <bdi dir="ltr">$L_f, L'_f$</bdi> לחישוב רדוקציה מובלעת.`,
+        relations: `ידוע: $\\text{DL} \\subseteq \\text{NL} = \\text{coNL} \\subseteq \\text{P}$, וידועה הפרדה ממש $\\text{DL} \\subsetneq \\text{PSPACE}$. לא ידוע אם $\\text{DL} = \\text{NL}$ או אפילו אם $\\text{NP} \\neq \\text{DL}$.`
+      },
+      NL: {
+        name: `NL = coNL`,
+        formal: `$\\text{NSPACE}(\\log n)$`,
+        desc: `אוסף כל השפות המזוהות ע"י מכונת טיורינג אי-דטרמיניסטית ב-$O(\\log n)$ תאי זיכרון עבודה.`,
+        examples: `<bdi dir="ltr">$s$-$t$-CON (PATH)</bdi>, <bdi dir="ltr">Odd-$st$-CON</bdi>, <bdi dir="ltr">ExactFORK</bdi>, <bdi dir="ltr">half-CON</bdi>, <bdi dir="ltr">$L_{\\text{TMls}}$</bdi>, <bdi dir="ltr">EXACT_PATH</bdi>, <bdi dir="ltr">$1\\text{CIRC}_{1/2}$</bdi>.`,
+        relations: `משפט אימרמן-סלפצ'ני קובע $\\text{NL} = \\text{coNL}$. מתקיים $\\text{NL} \\subseteq \\text{P}$ (גרף קונפיגורציות בגודל $2^{O(\\log n)} = \\text{poly}(n)$) וכן $\\text{NL} \\subsetneq \\text{DTIME}(2^n)$.`
+      },
+      P: {
+        name: `P`,
+        formal: `$\\bigcup_{c \\ge 1} \\text{DTIME}(n^c)$`,
+        desc: `אוסף כל השפות המוכרעות בזמן ריצה פולינומי ע"י מכונת טיורינג דטרמיניסטית. מייצגת "חישוב יעיל" לפי התזה המורחבת של צ'רץ'-טיורינג.`,
+        examples: `מסלול קצר בגרף, תכנות לינארי, פריקות שלמים, <bdi dir="ltr">CKT-EVAL</bdi>.`,
+        relations: `$\\text{NL} \\subseteq \\text{P} \\subseteq \\text{NP} \\cap \\text{coNP}$, וגם $\\text{P} \\subseteq \\text{BPP}$ וגם $\\text{P} \\subseteq \\text{P/poly}$ (כל מ"ט בזמן $T(n)$ ניתנת לסימולציה במעגלים בגודל $O(T^2)$).`
+      },
+      NP: {
+        name: `NP`,
+        formal: `$x \\in L \\iff \\exists y \\in \\{0,1\\}^{q(|x|)}\\; M(x,y)=1$`,
+        desc: `שפות שקיימת להן מכונת טיורינג דטרמיניסטית מוודאת $M$ בזמן פולינומי ועד (witness) באורך פולינומי.`,
+        examples: `<bdi dir="ltr">SAT, 3SAT, CLIQUE, INDSET, HAMILTONIANst, $\\overline{\\text{TAU}}$</bdi>.`,
+        relations: `אם $\\text{NP} \\subseteq \\text{P/poly}$ אז $\\text{PH} = \\Sigma_2^P$ (קארפ-ליפטון). אם $\\text{NP} \\subseteq \\text{BPP}$ ניתן לפתור בעיות חיפוש כמו מקסימום-קליקה ב-$\\text{BPP}$ ע"י צמצום עצמי.`
+      },
+      coNP: {
+        name: `coNP`,
+        formal: `$L \\in \\text{coNP} \\iff \\overline{L} \\in \\text{NP}$`,
+        desc: `שפות שלמילים שאינן בהן יש עד קצר להפרכה (או לכל העדים באורך פולינומי מתקיים $M(x,y)=1$).`,
+        examples: `<bdi dir="ltr">TAU</bdi> (טאוטולוגיות), אי-ספיקות של נוסחת CNF, השלמה של בעיות NP.`,
+        relations: `$\\text{coNP} \\subseteq \\text{IP}$ (דרך פרוטוקול <bdi dir="ltr">Sum-Check</bdi>). אם $\\text{NP} = \\text{coNP}$ אז ההיררכיה הפולינומית קורסת לרמה הראשונה.`
+      },
+      PH: {
+        name: `PH (ההיררכיה הפולינומית)`,
+        formal: `$\\bigcup_{k \\ge 1} \\Sigma_k^P = \\bigcup_{k \\ge 1} \\Pi_k^P$`,
+        desc: `הכללת NP ו-coNP באמצעות שרשור כמתים מתחלפים ($\\exists y_1 \\forall y_2 \\dots$) החסומים באורך פולינומי.`,
+        examples: `<bdi dir="ltr">ExactIndset</bdi> (האם הקבוצה הבלתי תלויה המקסימלית בגודל $k$ בדיוק), <bdi dir="ltr">MIN-DNF</bdi>.`,
+        relations: `$\\text{NP} \\cup \\text{coNP} \\subseteq \\text{PH} \\subseteq \\text{PSPACE}$. קריסת רמה כלשהי ($\\Sigma_k^P = \\Pi_k^P$) מקריסה את כל ההיררכיה לאותה רמה.`
+      },
+      PSPACE: {
+        name: `PSPACE = NPSPACE = IP`,
+        formal: `$\\bigcup_{c \\ge 1} \\text{DSPACE}(n^c)$`,
+        desc: `שפות הניתנות להכרעה במרחב עבודה פולינומי. שווה לאי-דטרמיניסטית (משפט סאביץ') ולמחלקת ההוכחות האינטראקטיביות (משפט שמיר).`,
+        examples: `<bdi dir="ltr">TQBF</bdi> (נוסחאות בוליאניות מכומתות), משחקי אסטרטגיה חסומי מהלכים.`,
+        relations: `סגורה תחת $\\le_p$. ידוע ש-$\\text{DTIME}(2^n) \\neq \\text{PSPACE}$ כי $\\text{DTIME}(2^n)$ אינה סגורה תחת $\\le_p$ (מבחן 2023א).`
+      },
+      EXP: {
+        name: `EXP / NEXP`,
+        formal: `$\\text{EXP} = \\bigcup_{c \\ge 1} \\text{DTIME}(2^{n^c})$`,
+        desc: `שפות המוכרעות בזמן אקספוננציאלי דטרמיניסטי (EXP) או אי-דטרמיניסטי (NEXP).`,
+        examples: `גרסאות תמציתיות (<bdi dir="ltr">Succinct</bdi>) של בעיות גרפים, ובעיית מסלול המילטוני בגרף קונפיגורציות $G_{L_{M,n},n}$ שב-$\\text{NEXP}$ (מבחן 2024ב).`,
+        relations: `$\\text{PSPACE} \\subseteq \\text{EXP} \\subseteq \\text{NEXP}$. ידועה הפרדה ממש $\\text{P} \\subsetneq \\text{EXP}$ וכן אם $\\text{P} = \\text{NP}$ אז $\\text{EXP} = \\text{NEXP}$ (במעבר נגדי: $H \\notin \\text{EXP} \\implies \\text{P} \\neq \\text{NP}$).`
+      },
+      ZPP: {
+        name: `ZPP`,
+        formal: `$\\text{RP} \\cap \\text{coRP}$`,
+        desc: `מכונות "לאס וגאס": תמיד מחזירות תשובה נכונה (אפס טעות), ותוחלת זמן הריצה פולינומית.`,
+        examples: `רלוונטית לשאלות מ"ט מטילת מטבעות עם אורקל דו-צדדי שעונה תמיד נכון (מבחן 2021א שאלה 2ג).`,
+        relations: `$\\text{P} \\subseteq \\text{ZPP} = \\text{RP} \\cap \\text{coRP} \\subseteq \\text{RP}, \\text{coRP} \\subseteq \\text{BPP}$.`
+      },
+      BPP: {
+        name: `BPP`,
+        formal: `$x \\in L \\Rightarrow \\Pr[M(x)=1] \\ge 2/3,\\; x \\notin L \\Rightarrow \\Pr[M(x)=1] \\le 1/3$`,
+        desc: `מכונות "מונטה קרלו" פולינומיות עם שגיאה דו-צדדית חסומה. ניתן להגביר הצלחה ל-$1 - 2^{-p(n)}$ ע"י הרצה חוזרת ורוב (צ'רנוף).`,
+        examples: `אקוויוולנטית גם כאשר דורשים תוחלת זמן פולינומית ($^*\\text{BPP} = \\text{BPP}$, מבחן 2024ב), או מרווח קבוע $p_1 > p_0$ (מבחן 2017א).`,
+        relations: `$\\text{BPP} \\subseteq \\text{P/poly}$ (אדלמן), $\\text{BPP} \\subseteq \\Sigma_2^P \\cap \\Pi_2^P$ (סיפסר-גאץ'-לאוטמן), $\\text{BPP} \\subseteq \\text{PP}$.`
+      },
+      PP: {
+        name: `PP`,
+        formal: `$x \\in L \\Rightarrow \\Pr[M(x)=1] > 1/2,\\; x \\notin L \\Rightarrow \\Pr[M(x)=1] \\le 1/2$`,
+        desc: `שפות שניתן להכריע ע"י רוב חלש (ללא פער קבוע מ-$1/2$) בזמן פולינומי אקראי. הפער יכול להיות קטן אקספוננציאלית ולכן אי-אפשר להגביר שגיאה ביעילות.`,
+        examples: `<bdi dir="ltr">MAJSAT</bdi> (האם מעל חצי מההשמות מספקות).`,
+        relations: `מתקיים $\\text{NP} \\cup \\text{coNP} \\cup \\text{BPP} \\subseteq \\text{PP} \\subseteq \\text{P}^{\\#\\text{SAT}} \\subseteq \\text{PSPACE}$ (מבחן 2021ב שאלה 2א).`
+      },
+      Ppoly: {
+        name: `P/poly`,
+        formal: `$\\bigcup_{i \\ge 1} \\text{SIZE}(n^i)$`,
+        desc: `שפות המוכרעות ע"י משפחת מעגלים בוליאניים $\{C_n\}_{n \\in \\mathbb{N}}$ בגודל פולינומי (חישוב לא-אחיד — מעגל שונה לכל אורך $n$). שקול למ"ט פולינומית עם עצה באורך פולינומי.`,
+        examples: `כולל גם שפות לא כריעות אונריות! וגם $\\text{P}$ וגם $\\text{BPP}$.`,
+        relations: `$\\text{P} \\subseteq \\text{BPP} \\subseteq \\text{P/poly}$. הפרדת היררכיית מעגלים: $\\text{SIZE}(n^2) \\subsetneq \\text{SIZE}(n^3)$ (מבחן 2023א). קארפ-ליפטון: $\\text{NP} \\subseteq \\text{P/poly} \\implies \\text{PH} = \\Sigma_2^P$.`
+      }
+    };
+
+    const COURSE_TOPICS = [
+      {
+        id: 1,
+        cluster: `basics`,
+        clusterLabel: `יסודות ורדוקציות`,
+        title: `מודלי חישוב, מ"ט אוניברסלית, P, NP וחיפוש מול הכרעה`,
+        summary: `הבסיס של הקורס: מעבר ממדידת זמן/מקום במכונות טיורינג אל המחלקות P ו-NP, משפט קוק-לווין, ושימוש באורקל להכרעה כדי לפתור בעיית חיפוש (Self-Reducibility).`,
+        definitions: [
+          `<strong>מ"ט אוניברסלית יעילה $U$:</strong> מסמלצת כל מ"ט $M$ הרצה בזמן $T(n)$ על קלט $x$ בזמן $O(T(|x|)\\log T(|x|))$.`,
+          `<strong>המחלקה $\\text{NP}$:</strong> קיימים פולינומים $l,q$ ומ"ט $M$ בזמן $l$ כך ש-$x \\in L \\iff \\exists y \\in \\{0,1\\}^{q(|x|)}\\; M(x,y)=1$.`,
+          `<strong>רדוקציה פולינומית ($A \\le_p B$):</strong> פונקציה $f$ חישובית בזמן פולינומי כך ש-$x \\in A \\iff f(x) \\in B$.`
+        ],
+        theorems: [
+          `<strong>משפט קוק-לווין:</strong> <bdi dir="ltr">SAT</bdi> ו-<bdi dir="ltr">3SAT</bdi> הן $\\text{NP}$-שלמות.`,
+          `<strong>חיפוש מול הכרעה (Self-Reducibility):</strong> עם אורקל ל-<bdi dir="ltr">SAT</bdi> ניתן למצוא השמה מספקת בזמן פולינומי (הצבת 0/1 לכל משתנה ובדיקת ספיקות), או למצוא קליקה מקסימלית בגרף ע"י הסרת צמתים והרצת אורקל.`
+        ],
+        examFocus: `במבחני הקורס מופיע רבות שילוב של רדוקציות פשוטות והוכחות שלמות/נכונות (<bdi dir="ltr">3SAT $\\le_p$ 4SAT</bdi> במועד ב' 2025; מציאת קליקה מקסימלית עם אורקל <bdi dir="ltr">SAT</bdi> במועד א' 2020; היפוך פונקציה ע"י חיפוש בינארי במועד א' 2023). הקפידו תמיד להוכיח שני כיוונים ($\\Rightarrow$ ו-$\\Leftarrow$) וזמן ריצה פולינומי!`
+      },
+      {
+        id: 2,
+        cluster: `basics`,
+        clusterLabel: `זמן והיררכיות`,
+        title: `משפטי היררכיה בזמן, לכסון, ריפוד ואורקלים`,
+        summary: `איך מוכיחים הפרדות חדות בין מחלקות זמן באמצעות לכסון, מדוע ריפוד (Padding) מעביר תוצאות כלפי מעלה, ומגבלות שיטות רלטיביות (Baker–Gill–Solovay).`,
+        definitions: [
+          `<strong>פונקציית זמן בניה (<bdi dir="ltr">time-constructible</bdi>):</strong> $T(n) \\ge n$ כך שקיימת מ"ט המחשבת את $T(n)$ על הקלט $1^n$ בזמן $O(T(n))$ (למשל $n, n^2, 2^n$).`,
+          `<strong>מכונת אורקל $M^A$:</strong> מ"ט בעלת סרט אורקל ייעודי שמקבלת תשובה לשאילתת שייכות $q \\in A$ בצעד חישוב בודד.`
+        ],
+        theorems: [
+          `<strong>משפט ההיררכיה (Hartmanis–Stearns):</strong> אם $f,g$ הן <bdi dir="ltr">time-constructible</bdi> ו-$f(n)\\log f(n) = o(g(n))$, אז $\\text{DTIME}(f(n)) \\subsetneq \\text{DTIME}(g(n))$.`,
+          `<strong>מסקנות:</strong> $\\text{P} \\subsetneq \\text{EXP}$.`,
+          `<strong>משפט Baker–Gill–Solovay (1975):</strong> קיימים אורקלים $A,B$ כך ש-$\\text{P}^A = \\text{NP}^A$ וגם $\\text{P}^B \\neq \\text{NP}^B$. לכן הוכחה רלטיבית אינה יכולה להכריע $\\text{P}=\\text{NP}$.`
+        ],
+        examFocus: `דפוס המבחנים הקלאסי הוא <strong>ריפוד (Padding)</strong>: מראים ש-$\\text{DTIME}(n^2)=\\text{NTIME}(n^2) \\implies \\text{DTIME}(n^5)=\\text{NTIME}(n^5)$ (מועד ב' 2021), או ש-$\\text{DTIME}(2^n)$ אינה סגורה תחת $\\le_p$ (מועד א' 2023), או הפרדת $\\text{NP} \\neq \\text{DTIME}(2^{\\sqrt{n}})$ (מועד א' 2019). זכרו לבדוק גם את תקינות פורמט הריפוד (לדחות קלט שאינו מהצורה $x0^{p(|x|)-|x|}$).`
+      },
+      {
+        id: 3,
+        cluster: `space`,
+        clusterLabel: `סיבוכיות מקום`,
+        title: `סיבוכיות מקום, גרף קונפיגורציות ומשפט סאביץ'`,
+        summary: `הבדל יסודי בין זמן למקום (מקום ניתן לשימוש חוזר). יצירת גרף הקונפיגורציות והפיכת אי-דטרמיניזם לדטרמיניזם בעלות ריבועית בלבד בזיכרון.`,
+        definitions: [
+          `<strong>$\\text{DSPACE}(S(n))$ ו-$\\text{NSPACE}(S(n))$:</strong> ספירת תאי זיכרון בסרטי העבודה והפלט בלבד (ללא סרט הקלט שהוא לקריאה בלבד).`,
+          `<strong>גרף הקונפיגורציות $G_{M,x}$:</strong> קודקודים הם מצבי המכונה, מיקומי הראשים ותוכן סרט העבודה. עבור מקום $S(n) \\ge \\log n$, מספר הקונפיגורציות חסום ע"י $2^{O(S(n))}$.`
+        ],
+        theorems: [
+          `<strong>משפט סאביץ' (Savitch):</strong> לכל $S(n) \\ge \\log n$ בניה-במקום, $\\text{NSPACE}(S(n)) \\subseteq \\text{DSPACE}(S^2(n))$.`,
+          `<strong>מסקנה:</strong> $\\text{PSPACE} = \\text{NPSPACE}$ (כי ריבוע של פולינום הוא פולינום).`,
+          `<strong>שרשרת מקום וזמן:</strong> $\\text{DTIME}(T(n)) \\subseteq \\text{DSPACE}(T(n)) \\subseteq \\text{DTIME}(2^{O(T(n))})$.`
+        ],
+        examFocus: `במבחן מועד א' 2023 (שאלה 1) הוכח ש-$\\text{PSPACE}$ סגורה תחת $\\le_p$ (כי חישוב $f(x)$ בזמן פולינומי צורך לכל היותר מקום פולינומי וגם פלט $y=f(x)$ באורך פולינומי), ובהשוואה לאי-סגירות $\\text{DTIME}(2^n)$ מסיקים ש-$\\text{DTIME}(2^n) \\neq \\text{PSPACE}$!`
+      },
+      {
+        id: 4,
+        cluster: `space`,
+        clusterLabel: `L, NL ואימרמן`,
+        title: `שלמות ב-PSPACE, רדוקציות לוגריתמיות, L, NL ואימרמן-סלפצ'ני`,
+        summary: `הבנת רדוקציה בזיכרון לוגריתמי מובלע ($\\le_\\ell$), שפות שלמות ב-NL, ואלגוריתם הספירה האינדוקטיבי של אימרמן-סלפצ'ני המוכיח $\\text{NL} = \\text{coNL}$.`,
+        definitions: [
+          `<strong>רדוקציה בזיכרון לוגריתמי מובלע ($A \\le_\\ell B$):</strong> פונקציה $f$ חסומה פולינומית ($|f(x)| \\le |x|^c$) כך ששתי השפות $L_f = \\{\\langle x,i \\rangle : f(x)[i]=1\\}$ ו-$L'_f = \\{\\langle x,i \\rangle : |f(x)| \\ge i\\}$ שייכות ל-$\\text{DL}$.`,
+          `<strong><bdi dir="ltr">$s$-$t$-CON (PATH)</bdi>:</strong> בהינתן גרף מכוון $G$ וקודקודים $s,t$, האם יש מסלול מ-$s$ ל-$t$. הבעיה $\\text{NL}$-שלמה.`
+        ],
+        theorems: [
+          `<strong>משפט אימרמן-סלפצ'ני:</strong> $\\text{NL} = \\text{coNL}$. ההוכחה סופרת אינדוקטיבית את $c_i$ = מספר הצמתים הישיגים מ-$s$ בעד $i$ צעדים, בעזרת זיהוי א"ד עם מונים בגודל $O(\\log n)$ ביטים.`,
+          `<strong>$\\text{TQBF}$ שלמה ב-$\\text{PSPACE}$.</strong>`,
+          `<strong>גרסאות מבחן ל-$\\text{NL}$-שלמות:</strong> <bdi dir="ltr">Odd-$st$-CON</bdi> (2020א), <bdi dir="ltr">$L_{\\text{TMls}}$</bdi> ו-<bdi dir="ltr">EXACT_PATH</bdi> (2021א), <bdi dir="ltr">$1\\text{CIRC}_{1/2}, 2\\text{CIRC}_{1/2}$</bdi> (2024א), <bdi dir="ltr">ExactFORK</bdi> (2025א).`
+        ],
+        examFocus: `בשאלות $\\text{NL}$ ו-$\\text{coNL}$, זכרו שמונים וקודקודים נשמרים ב-$O(\\log n)$ ביטים, אך <strong>אסור</strong> לשמור מסלול שלם או קבוצת צמתים! כשרוצים להוכיח $L_1 \\le_\\ell L_{\\text{TMls}}$ (מועד א' 2021 שאלה 3ב), אל תבנו רדוקציה מפורשת — מספיק להראות ש-$L_1 \\in \\text{NL}$ (ע"י חיפוש מסלול קצר מ-$s$ ל-$t$ שאינו קצר מ-$k$ בעזרת $\\text{NL}=\\text{coNL}$) ולהסתמך על שלמות $L_{\\text{TMls}}$!`
+      },
+      {
+        id: 5,
+        cluster: `circuits`,
+        clusterLabel: `ההיררכיה הפולינומית`,
+        title: `ההיררכיה הפולינומית (PH) ו-coNP`,
+        summary: `המחלקות שמעל NP ו-coNP המוגדרות ע"י כמתים מתחלפים, שלמות ב-coNP, והתנהגות קריסת ההיררכיה.`,
+        definitions: [
+          `<strong>$\\text{coNP}$:</strong> שפות שהמשלים שלהן ב-$\\text{NP}$. דוגמה שלמה: $\\text{TAU} = \\{\\varphi : \\forall z\\; \\varphi(z)=1\\}$ (מטלה 2 סעיף 7).`,
+          `<strong>$\\Sigma_k^P$ ו-$\\Pi_k^P$:</strong> $k$ בלוקים של כמתים מתחלפים באורך פולינומי ($\\exists y_1 \\forall y_2 \\dots$) לפני פרדיקט פולינומי דטרמיניסטי.`
+        ],
+        theorems: [
+          `<strong>קריסת ההיררכיה:</strong> אם $\\text{P}=\\text{NP}$ אז $\\text{PH}=\\text{P}$. אם $\\text{NP}=\\text{coNP}$ אז $\\text{PH}=\\text{NP}$. בכלל, $\\Sigma_k^P = \\Pi_k^P \\implies \\text{PH} = \\Sigma_k^P$.`,
+          `<strong>$L \\in \\text{coNP-complete} \\iff \\overline{L} \\in \\text{NP-complete}$</strong> (שימושי להוכחת שלמות ע"י לקיחת משלים).`
+        ],
+        examFocus: `בבעיות שדורשות "קיים אובייקט בגודל $k$ וגם לא קיים אובייקט בגודל $k+1$" (כמו <bdi dir="ltr">ExactIndset</bdi> או <bdi dir="ltr">EXACT_PATH</bdi> בפולינומי), הכמת הראשון הוא $\\exists$ והשני הוא $\\forall$, מה שממקם את הבעיה ב-$\\Sigma_2^P$ (או $\\text{DP}$).`
+      },
+      {
+        id: 6,
+        cluster: `circuits`,
+        clusterLabel: `מעגלים ו-P/poly`,
+        title: `מעגלים בוליאניים, P/poly, חסמים תחתונים ומכונות עם עצה`,
+        summary: `מודל החישוב הלא-אחיד (מעגל שונה לכל אורך קלט $n$), סימולציה של P במעגלים, חסם עליון $O(2^n)$ והוכחות אי-קיום מעגלים קטנים ע"י ספירה.`,
+        definitions: [
+          `<strong>גודל מעגל:</strong> מספר השערים הפנימיים ($\\text{AND, OR}$ עם <bdi dir="ltr">fan-in 2</bdi>, ו-$\\text{NOT}$ עם <bdi dir="ltr">fan-in 1</bdi>; <bdi dir="ltr">fan-out</bdi> 2 או בלתי מוגבל).`,
+          `<strong>$\\text{P/poly}$:</strong> $\\bigcup_{i \\ge 1} \\text{SIZE}(n^i)$ — שפות בעלות משפחת מעגלים בגודל פולינומי. שקול למכונת טיורינג פולינומית עם מחרוזת עצה $a_n$ לכל אורך $n$.`,
+          `<strong>$\\text{NC}_d$:</strong> משפחת מעגלים בגודל פולינומי ועומק $O(\\log^d n)$ (חישוב מקבילי יעיל).`
+        ],
+        theorems: [
+          `<strong>$\\text{P} \\subseteq \\text{P/poly}$:</strong> המרה למכונה <bdi dir="ltr">oblivious</bdi> בזמן $O(T(n)\\log T(n))$ או $O(T^2(n))$ ובניית מעגל מתמונות מצב לוקאליות.`,
+          `<strong>חסם עליון לכל פונקציה בוליאנית:</strong> ע"י הרחבת שאנון $C(x)=(\\neg x_n \\land C_0) \\lor (x_n \\land C_1)$ מקבלים גודל $2d+4$ בצעד, ובאינדוקציה $S(n) \\le 8\\cdot 2^n - 4 = O(2^n)$ (מבחן 2023א שאלה 3).`,
+          `<strong>הפרדת היררכיית מעגלים $\\text{SIZE}(n^2) \\subsetneq \\text{SIZE}(n^3)$:</strong> קיימת פונקציה התלויה רק ב-$k(n)=\\lceil 2.1\\log n \\rceil$ ביטים ראשונים (מספרן $2^{n^{2.1}}$), בעוד מספר המעגלים מגודל $cn^2$ הוא לכל היותר $2^{O(n^2 \\log n)}$.`,
+          `<strong>משפט קארפ-ליפטון:</strong> $\\text{NP} \\subseteq \\text{P/poly} \\implies \\text{PH} = \\Sigma_2^P$.`
+        ],
+        examFocus: `במבחן מועד א' 2023 (שאלה 3) מופיע רצף מלא: (א) מולטיפלקסר בגודל $2d+4$, (ב) הוכחת $8 \\cdot 2^n - 4$, (ג) טיעון ספירה עם רישא של $\\lceil 2.1\\log n \\rceil$ ביטים, (ד) מסקנה ש-$\\text{SIZE}(n^2) \\subsetneq \\text{SIZE}(n^3)$ כי $n^{2.1} > K n^2 \\log n$ וכל פונקציה כזו ניתנת למימוש בגודל $O(2^{2.1\\log n}) = O(n^{2.1}) \\subseteq O(n^3)$!`
+      },
+      {
+        id: 7,
+        cluster: `circuits`,
+        clusterLabel: `רשתות נוירונים`,
+        title: `סיבוכיות רשתות נוירונים (ReLU Networks)`,
+        summary: `הקשר בין ארכיטקטורת רשתות עצביות (עומק מול רוחב) לסיבוכיות חישובית ולסיבוכיות הבעיה של אימות התנהגות רשת.`,
+        definitions: [
+          `<strong>רשת <bdi dir="ltr">ReLU</bdi>:</strong> פונקציות הפעלה לינאריות למקוטעין $\\text{ReLU}(z) = \\max(0, z)$ המסודרות בשכבות.`,
+          `<strong>עומק מול רוחב (<bdi dir="ltr">Depth vs. Width</bdi>):</strong> הפרדות אקספוננציאליות בגודל הנדרש לרשת רדודה לעומת רשת עמוקה (אנלוגי לעומק מעגלים).`
+        ],
+        theorems: [
+          `<strong>סיבוכיות אימות רשתות (<bdi dir="ltr">Network Verification</bdi>):</strong> בדיקת תכונה על פלט של רשת ReLU (כגון אי-קיום דוגמה מתקיפה באזור קלט) היא לרוב $\\text{NP}$-קשה / $\\text{coNP}$-שלמה (רדוקציה מ-<bdi dir="ltr">3SAT</bdi>).`
+        ],
+        examFocus: `הבינו את האנלוגיה בין רדוקציית <bdi dir="ltr">3SAT</bdi> למעגלים בוליאניים לבין קידוד שערי <bdi dir="ltr">AND/OR/NOT</bdi> באמצעות גאדג'טים של נוירוני <bdi dir="ltr">ReLU</bdi>.`
+      },
+      {
+        id: 8,
+        cluster: `random`,
+        clusterLabel: `חישוב אקראי`,
+        title: `מחלקות הסתברותיות (RP, coRP, BPP, ZPP, PP) והגברת שגיאה`,
+        summary: `המודל ההסתברותי, דוגמת Polynomial Identity Testing, חסמי ריכוז (צ'רנוף ומרקוב) והפיכת שגיאה קבועה לשגיאה זניחה אקספוננציאלית.`,
+        definitions: [
+          `<strong>$\\text{RP}$ / $\\text{coRP}$:</strong> שגיאה חד-צדדית ($\\Pr \\ge 2/3$ מול $0$, או $1$ מול $\\le 1/3$). $\\text{ZPP} = \\text{RP} \\cap \\text{coRP}$ (אפס טעות, תוחלת זמן פולינומית).`,
+          `<strong>$\\text{BPP}$:</strong> שגיאה דו-צדדית ($\\ge 2/3$ מול $\\le 1/3$). דוגמה חשובה: <bdi dir="ltr">ZeroP $\\in$ coRP</bdi> (למת שוורץ-זיפל לבדיקת זהות פולינום לאפס).`,
+          `<strong>$\\text{PP}$:</strong> $\\Pr[M(x)=1] > 1/2$ אם $x \\in L$, ו-$\\le 1/2$ אם $x \\notin L$.`
+        ],
+        theorems: [
+          `<strong>הגברת שגיאה ב-$\\text{BPP}$:</strong> הרצה בלתי תלויה $k$ פעמים ולקיחת הרוב מקטינה את השגיאה מ-$1/2 - \\varepsilon$ ל-$2^{-\\Omega(k\\varepsilon^2)}$ (צ'רנוף).`,
+          `<strong>$^*\\text{BPP} = \\text{BPP}$ (מבחן 2024ב):</strong> ממכונה שתוחלת הזמן שלה פולינומית $p(n)$, קוטעים את הריצה אחרי $10 \\cdot p(n)$ צעדים (אי-שוויון מרקוב: סיכוי החריגה $\\le 1/10$) ומגבירים מחדש מ-$2/3 - 1/10$ חזרה ל-$2/3$.`,
+          `<strong>$\\text{PP} \\subseteq \\text{P}^{\\#\\text{SAT}}$ (מבחן 2021ב):</strong> בעזרת אורקל ל-$\\#\\text{SAT}$ ושימוש בתרגום מ"ט לנוסחת <bdi dir="ltr">CNF</bdi> סופרים כמה מחרוזות אקראיות מובילות לקבלת 1.`
+        ],
+        examFocus: `נושא הגברת השגיאה והשילוב של אורקל אקראי מופיעים כמעט בכל בחינה: שימו לב להבדל בין הגברה עם גישה לאורקל (מבחן 2021א שאלה 2), הצורך לתקן הסתברות כשחוזרים על חיפוש בינארי ע"י צמצום ל-$\\varepsilon = 1/(10n)$ ואז <bdi dir="ltr">Union Bound</bdi> (מבחן 2023א שאלה 2ב), והמעבר בין ספי הסתברות $p_0, p_1$ למחלקה $\\text{BPP}$ (מבחן 2017א, 2020ב).`
+      },
+      {
+        id: 9,
+        cluster: `random`,
+        clusterLabel: `BPP⊆P/poly ו-IP`,
+        title: `משפט אדלמן (BPP ⊆ P/poly) והוכחות אינטראקטיביות (IP, GNI)`,
+        summary: `דה-רנדומיזציה לא-אחידה באמצעות מחרוזת עצה אוניברסלית, ומעבר למערכת הוכחה אקראית עם מוכיח כל-יכול ומוודא פולינומי.`,
+        definitions: [
+          `<strong>המחלקה $\\text{IP}$:</strong> מערכת הוכחה אינטראקטיבית של $k=\\text{poly}(n)$ סיבובים בין מוכיח $P$ למוודא PPT $V$: שלמות $\\Pr[\\langle P,V\\rangle(x)=1] \\ge 2/3$, נאותות $\\forall P^*\\; \\Pr[\\langle P^*,V\\rangle(x)=1] \\le 1/3$.`,
+          `<strong>$\\text{GNI}$ (אי-איזומורפיזם של גרפים):</strong> הבעיה ב-$\\text{IP}$ (מוודא מגריל גרף אקראי עם פרמוטציה אקראית ושואל את המוכיח מאיזה גרף מקורי הגיע).`
+        ],
+        theorems: [
+          `<strong>משפט אדלמן:</strong> $\\text{BPP} \\subseteq \\text{P/poly}$. הרעיון: מגבירים שגיאה ל-$< 2^{-n}$ כך ש-$\\sum_{x\\in\\{0,1\\}^n} \\Pr_r[M(x;r)\\text{ errs}] < 2^n \\cdot 2^{-n} = 1$, ולכן קיימת מחרוזת אקראית טובה $r^*$ לכל הקלטים באורך $n$.`,
+          `<strong>סגירות $\\text{IP}$ (מבחן 2021ב שאלה 3א):</strong> סגורה תחת חיתוך (הגברה + הרצת שני הפרוטוקולים וקבלה אם שניהם מקבלים) ותחת משלים (כי $\\text{IP} = \\text{PSPACE}$ ו-$\\text{PSPACE}$ סגורה תחת משלים).`
+        ],
+        examFocus: `במבחנים נשאלים לעיתים קרובות על גרסאות מוגבלות של $\\text{IP}$: למשל שלמות $2^{-|x|}$ ונאותות $1$ (מועד א' 2017 — נותן $\\text{NP}$? שימו לב לסימן השוויון!), או מוודא לוגריתמי עם תשובות מוכיח באורך $\\log n$ שנותן $\\text{P} \\subseteq \\text{DL}$ (מועד א' 2020 שאלה 2ג), או מוכיח דטרמיניסטי עם הודעות באורך $\\sqrt{n}$ שנותן $\\text{NP} \\subseteq \\text{DTIME}(2^{\\sqrt{n}})$ (מועד א' 2019 שאלה 2ב).`
+      },
+      {
+        id: 10,
+        cluster: `random`,
+        clusterLabel: `Sum-Check`,
+        title: `אריתמטיזציה, פרוטוקול Sum-Check ומשפט coNP ⊆ IP`,
+        summary: `המעבר מלוגיקה בוליאנית לאלגברה של פולינומים מעל שדות סופיים — הטכניקה המרכזית שהוכיחה $\\text{coNP} \\subseteq \\text{IP}$ ובסופו של דבר $\\text{IP} = \\text{PSPACE}$.`,
+        definitions: [
+          `<strong>אריתמטיזציה של $\\text{CNF}$:</strong> החלפת ליטרל $x_i$ ב-$x_i$, $\\neg x_i$ ב-$(1-x_i)$, פסוקית $(a \\lor b \\lor c)$ ב-$1 - (1-a)(1-b)(1-c)$, ונוסחה שלמה במכפלת הפסוקיות $P_\\varphi(x_1,\\dots,x_n)$.`,
+          `<strong>משפט $\\text{UNSAT}$ כסכום פולינומי:</strong> $\\varphi \\in \\text{UNSAT} \\iff \\sum_{x_1 \\in \\{0,1\\}} \\dots \\sum_{x_n \\in \\{0,1\\}} P_\\varphi(x_1,\\dots,x_n) = 0$ מעל שדה סופי $\\mathbb{F}_p$ גדול מספיק.`
+        ],
+        theorems: [
+          `<strong>פרוטוקול Sum-Check:</strong> בכל סיבוב $i$, המוכיח שולח פולינום חד-משתני $s_i(X_i)$ מדרגה $\\le d$, המוודא בודק $s_i(0)+s_i(1) = K_{i-1}$ ומגריל $r_i \\in \\mathbb{F}_p$ ושולח לסיבוב הבא. בסוף מעריך $P_\\varphi(r_1,\\dots,r_n)$ ישירות.`,
+          `<strong>נאותות Sum-Check:</strong> מוכיח שקרן נאלץ לתת פולינום שונה מזה האמיתי; שני פולינומים שונים מדרגה $\\le d$ נפגשים בלכל היותר $d$ נקודות, לכן סיכוי ההונאה בסיבוב $\\le d/|\\mathbb{F}_p|$, ובסה"כ $\\le nd/|\\mathbb{F}_p|$.`,
+          `<strong>מסקנה:</strong> $\\#\\text{SAT}$ ו-$\\text{coNP}$ שייכות ל-$\\text{IP}$ (ועם הקטנת מעלה לינאריזציה מתקבל $\\text{IP} = \\text{PSPACE}$).`
+        ],
+        examFocus: `הבינו מדוע חובה לעבוד מעל שדה גדול $\\mathbb{F}_p$ ($p > 2^n \\cdot d$ או לפחות $p \\gg n d$): מצד אחד שלא יהיו התנגשויות בסכום מודולו $p$ (כך ש-$\\text{UNSAT} \\iff$ סכום 0 ולא כפולה של $p$), ומצד שני ש-$d/|\\mathbb{F}_p|$ יהיה זניח.`
+      },
+      {
+        id: 11,
+        cluster: `random`,
+        clusterLabel: `אלגוריתמי קירוב`,
+        title: `אלגוריתמי קירוב, תוחלת מותנית ובעיות פער (Gap Problems)`,
+        summary: `התמודדות עם בעיות $\\text{NP}$-קשות דרך פתרונות מקורבים, דה-רנדומיזציה של קירוב $\\text{MAX-3SAT}$ בשיטת התוחלת המותנית, והקשר בין בעיות פער לקושי קירוב.`,
+        definitions: [
+          `<strong>אלגוריתם קירוב $\\rho$:</strong> לבעיית מקסימום ($\\rho < 1$), מחזיר פתרון שגודלו $\\ge \\rho \\cdot \\text{OPT}$. לבעיית מינימום (כמו <bdi dir="ltr">Vertex Cover</bdi> ביחס $2$), מחזיר פתרון בגודל $\\le 2 \\cdot \\text{OPT}$.`,
+          `<strong>בעיית פער (<bdi dir="ltr">Gap Problem</bdi>):</strong> בעיית הבטחה להבחין בין מופעים שבהם $\\text{OPT} \\ge c$ למופעים שבהם $\\text{OPT} \\le s$ (כאשר $s < c$).`
+        ],
+        theorems: [
+          `<strong>$\\text{Vertex Cover}$ עם קירוב 2:</strong> לקיחת שני קודקודי שידוך מקסימלי (Maximal Matching).`,
+          `<strong>$\\text{MAX-3SAT}$ עם קירוב $7/8$:</strong> השמה אקראית מספקת כל פסוקית בהסתברות $7/8$, ושיטת התוחלת המותנית קובעת משתנה אחר משתנה באופן דטרמיניסטי לשמירה על תוחלת $\\ge 7/8 \\cdot m$.`,
+          `<strong>קישוריות פער-קירוב (מבחן 2021א שאלה 1ג):</strong> אם לא קיימת רדוקציה מ-<bdi dir="ltr">CLIQUE</bdi> ל-<bdi dir="ltr">$\\text{YesNoClique}_{\\log n}$</bdi>, אז אין אלגוריתם קירוב קבוע $\\rho < 1$ ל-<bdi dir="ltr">MAX-CLIQUE</bdi> (אחרת קירוב $\\rho$ + ניפוח/הרכבת גרפים היה מכריע הבטחות פער).`
+        ],
+        examFocus: `במבחן מועד א' 2021 (שאלה 1) בוחנים את שפת הפער $\\text{YesNoClique}_k$: גרף שיש בו קליקה בגודל $k(|V|)$ ואין בו קליקה בגודל $|V|-k(|V|)$. שימו לב לתזכורת שבמבחן: $\\binom{n}{t} \\le n^t / t!$ — זהו כלי ישיר להוכיח ש-$\\text{YesNoClique}_7 \\in \\text{P}$ (בדיקה ברוטאלית של קליקה בגודל 7 בזמן $O(n^7)$ ושל קליקה בגודל $n-7$ ע"י בדיקת כיסוי צמתים / קבוצה בלתי תלויה בגודל 7 בגרף המשלים!).`
+      },
+      {
+        id: 12,
+        cluster: `random`,
+        clusterLabel: `משפט ה-PCP`,
+        title: `משפט ה-PCP וקושי קירוב (Hardness of Approximation)`,
+        summary: `הגדרה הסתברותית של משפט ה-PCP (בדיקת הוכחה בקריאת מספר קבוע של ביטים!), והשימוש בו להוכחת חוסר-קירוב של $\\text{MAX-3SAT}$ ו-$\\text{INDSET}$.`,
+        definitions: [
+          `<strong>מוודא $(r(n), q(n))\\text{-PCP}$:</strong> אלגוריתם PPT עם גישת RAM להוכחה $\\pi \\in \\{0,1\\}^{q(n)\\cdot 2^{r(n)}}$, המגריל $r(n)$ ביטים וקורא לכל היותר $q(n)$ ביטים מ-$\\pi$ באופן לא-אדפטיבי. שלמות: $x \\in L \\implies \\exists \\pi\\; \\Pr[V^\\pi(x)=1]=1$. נאותות: $x \\notin L \\implies \\forall \\pi\\; \\Pr[V^\\pi(x)=1] \\le 1/2$.`
+        ],
+        theorems: [
+          `<strong>משפט ה-PCP:</strong> $\\text{NP} = \\text{PCP}(O(\\log n), O(1))$.`,
+          `<strong>הגברת פער ל-PCP:</strong> אם קיים קירוב $(1-\\alpha)$ וניתן לשפר פער מ-$\\alpha$ ל-$1 - (1-\\alpha)^k$ (במכפלת גרפים / תרכובת אילוצים), מגיעים בסתירה לאפשרות קירוב של $\\text{MAX-CLIQUE}$ או $\\text{CSP}$.`
+        ],
+        examFocus: `ודאו שאתם יודעים לנסח במדויק את הגדרת $\\text{PCP}(r(n), q(n))$ (מספר הטלות אקראיות $r(n)$, מספר שאילתות לא-אדפטיביות $q(n)$, שלמות 1, נאותות $1/2$, אורך מקסימלי של הוכחה $q(n) \\cdot 2^{r(n)}$) ואת ניסוח משפט ה-PCP.`
+      }
+    ];
+
+    const EXAM_PATTERNS = [
+      {
+        num: `01`,
+        title: `טכניקת הריפוד (Padding)`,
+        exams: `2019א · 2021ב · 2023א`,
+        recipe: `כאשר רוצים לגזור שוויון/אי-שוויון במחלקה גבוהה יותר (או לשבור סגירות תחת $\\le_p$), מגדירים שפה מרופדת $L_{\\text{pad}} = \\{x 0^{|x|^k - |x|} : x \\in L\\}$ (או עם $2^{\\sqrt{n}}$). מוכיחים: (1) $L_{\\text{pad}}$ במחלקה הנמוכה כי אורך הקלט החדש $N=|x|^k$ מקטין את זמן הריצה יחסית ל-$N$, (2) $L \\le_p L_{\\text{pad}}$ (או קריאה של $L_{\\text{pad}}$ בסימולציה).`
+      },
+      {
+        num: `02`,
+        title: `חיפוש בינארי + אורקל (Search vs. Decision)`,
+        exams: `2020א · 2023א · מטלה 2`,
+        recipe: `כדי למצוא עד/קדם-תמונה מינימלי $x^*$: מגדירים פרדיקט מונוטוני $P(z) = \\text{Oracle}(y, z)$ (האם קיים עד $< z$). מתחילים בחיפוש בינארי ב-$n$ איטרציות על $[0^n, 1^n]$ תוך שמירת האינווריאנט $P(\\text{lo})=0, P(\\text{hi})=1$. אם האורקל הוא ב-$\\text{BPP}$: מגבירים שגיאה ל-$\\varepsilon = 1/(10n)$, ובסוף מאמתים דטרמיניסטית $f(\\tilde{x})=y$ וחוזרים עד הצלחה (תוחלת $O(1)$ ניסיונות).`
+      },
+      {
+        num: `03`,
+        title: `הגברת הסתברות, צ'רנוף ופירוש זניחות`,
+        exams: `2017א · 2020ב · 2021א · 2021ב · 2024ב`,
+        recipe: `כשיש מכונה עם הסתברות הצלחה $p_1$ מול $p_0$ ($p_1 - p_0 \\ge 1/\\text{poly}(n)$): מריצים $k = \\Theta(n / (p_1-p_0)^2)$ פעמים ולוקחים רוב מעל הסף $(p_0+p_1)/2$. ב-<bdi dir="ltr">Union Bound</bdi> על כל הקלטים באורך $n$ (כמו בהוכחת עצה אוניברסלית), מגבירים את השגיאה מתחת ל-$2^{-n}$ כך שקיימת מחרוזת אקראית טובה אחת לכולם.`
+      },
+      {
+        num: `04`,
+        title: `אימרמן-סלפצ'ני ו-NL-שלמות`,
+        exams: `2019א · 2020א · 2021א · 2024א · 2025א`,
+        recipe: `כדי להראות ששפה ב-$\\text{NL}$: זכרו שמונים וקודקודים עולים $O(\\log n)$ ביטים, אך <strong>לא</strong> שומרים מסלול. לשלילת קיום מסלול או לבדיקת "בדיוק אורך $k$" / "מסלול יחיד" — משתמשים בהיפוך $\\text{NL}=\\text{coNL}$ או בספירה אינדוקטיבית. לרדוקציה $\\le_\\ell$: מראים איך לחשב כל ביט בפלט ב-$\\text{DL}$, או משתמשים בתכונת השלמות.`
+      },
+      {
+        num: `05`,
+        title: `מעגלים: רקורסיית שאנון וטיעוני ספירה`,
+        exams: `2023א (שאלה 3)`,
+        recipe: `במעגלים, בניית מולטיפלקסר משלבת $C_0, C_1$ עם 4 שערים (NOT, שני AND, OR). להוכחת חסם תחתון או הפרדת $\\text{SIZE}(n^2) \\subsetneq \\text{SIZE}(n^3)$: סופרים כמה פונקציות תלויות רק ברישא של $k(n) = \\lceil c\\log n\\rceil$ ביטים ($2^{2^{k(n)}} \\ge 2^{n^c}$) ומשווים לחסם העליון על מספר המעגלים מגודל $s$: $\\le (s+1)\\cdot 2^{O(s\\log(n+s))}$.`
+      },
+      {
+        num: `06`,
+        title: `סימולציית IP קצרה או דטרמיניסטית`,
+        exams: `2017א · 2019א · 2020א · 2021ב`,
+        recipe: `כשמערכת אינטראקטיבית מוגבלת ל-$k$ סיבובים עם הודעות קצרות (למשל סה"כ $\\log n$ או $\\sqrt{n}$ ביטים), מוודא דטרמיניסטי או לוגריתמי יכול לעבור בלולאה על <strong>כל</strong> תסריטי התשובות האפשריים של המוכיח ($2^{O(\\log n)}=\\text{poly}(n)$ או $2^{\\sqrt{n}}$) ולבדוק אם קיים מוכיח שגורם לקבל!`
+      }
+    ];
+
+    const WORKED_QUESTIONS = [
+      {
+        id: `wq1`,
+        category: `היררכיה וריפוד`,
+        source: `מועד א' 2023 · שאלה 1 (ב+ג)`,
+        title: `הוכיחו כי $\\text{DTIME}(2^n)$ אינה סגורה תחת רדוקציות פולינומיות, והסיקו ש-$\\text{DTIME}(2^n) \\neq \\text{PSPACE}$.`,
+        hint: `רמז: לפי משפט ההיררכיה קיימת שפה $L_1 \\in \\text{DTIME}(2^{n^2}) \\setminus \\text{DTIME}(2^n)$. רפדו אותה לשפה $L_2 = \\{x 0^{|x|^2 - |x|} : x \\in L_1\\}$. לאחר מכן שלבו עם סעיף א' ש-$\\text{PSPACE}$ כן סגורה תחת $\\le_p$.`,
+        solution: `
+          <ol class="detail-list">
+            <li><strong>שלב 1 — בחירת שפה מפרידה:</strong> לפי משפט ההיררכיה הדטרמיניסטית בזמן, מתקיים $\\text{DTIME}(2^n) \\subsetneq \\text{DTIME}(2^{n^2})$ (כי $2^n \\cdot n = o(2^{n^2})$). לכן קיימת שפה $L_1 \\in \\text{DTIME}(2^{n^2}) \\setminus \\text{DTIME}(2^n)$.</li>
+            <li><strong>שלב 2 — בניית השפה המרופדת:</strong> נגדיר $L_2 = \\{x 0^{|x|^2 - |x|} : x \\in L_1\\}$.</li>
+            <li><strong>שלב 3 — $L_1 \\le_p L_2$:</strong> הפונקציה $f(x) = x 0^{|x|^2 - |x|}$ ניתנת לחישוב בזמן $O(|x|^2)$ (פולינומי), וברור ש-$x \\in L_1 \\iff f(x) \\in L_2$.</li>
+            <li><strong>שלב 4 — $L_2 \\in \\text{DTIME}(2^n)$:</strong> בהינתן קלט $w$ באורך $n$, בודקים בזמן פולינומי אם $w$ מהצורה $x 0^{|x|^2-|x|}$ (בפרט $n = |x|^2$, כלומר $|x|=\\sqrt{n}$). אם לא — דוחים. אם כן — מריצים את המכונה המכריעה של $L_1$ על $x$ בזמן $2^{|x|^2} = 2^n$. סה"כ $O(2^n)$ צעדים.</li>
+            <li><strong>שלב 5 — סתירה לסגירות ומסקנה:</strong> אילו $\\text{DTIME}(2^n)$ הייתה סגורה תחת $\\le_p$, היינו מקבלים $L_1 \\in \\text{DTIME}(2^n)$ — סתירה. מכיוון שבסעיף א' הוכחנו ש-$\\text{PSPACE}$ כן סגורה תחת $\\le_p$ (חישוב $f(x)$ בזמן פולינומי צורך מקום פולינומי והפלט חסום פולינומית), בהכרח $\\text{DTIME}(2^n) \\neq \\text{PSPACE}$.</li>
+          </ol>
+        `
+      },
+      {
+        id: `wq2`,
+        category: `חיפוש ואקראיות`,
+        source: `מועד א' 2023 · שאלה 2ב`,
+        title: `נתונה $f:\\{0,1\\}^n \\to \\{0,1\\}^n$ חישובית בזמן פולינומי, ו-$L = \\{(y,z) : \\exists \\hat{x}<z,\\; f(\\hat{x})=y\\}$. הניחו $L \\in \\text{BPP}$. בנו מ"ט אקראית שבהינתן $y=f(x)$ מחזירה תמיד קדם-תמונה $\\hat{x}$ בתוחלת זמן פולינומית.`,
+        hint: `רמז: הגבירו את המכונה של $L$ לשגיאה $\\varepsilon = 1/(10n)$, בצעו חיפוש בינארי על $[0^n, 1^n]$ למציאת $x^*$ המינימלי, אמתו דטרמיניסטית ש-$f(\\tilde{x})=y$, ואם נכשלתם — נסו שוב!`,
+        solution: `
+          <ol class="detail-list">
+            <li><strong>הגברת שגיאה:</strong> היות ש-$L \\in \\text{BPP}$, קיימת מכונה $N$ עם שגיאה $\\le 1/3$. בהרצת $N$ באופן בלתי תלוי $k = \\Theta(\\log n)$ פעמים ולקיחת רוב, נקבל מכונה $N'$ בזמן פולינומי כך שלכל $(y,z)$ הסתברות הטעות היא $\\le \\varepsilon = \\frac{1}{10n}$.</li>
+            <li><strong>ניסיון בודד $\\text{Attempt}(y)$:</strong>
+              <ul>
+                <li>אם $N'(y, 1^n) = 0$, בודקים אם $f(1^n)=y$ (כי אולי $x^* = 2^n - 1$).</li>
+                <li>אחרת מאתחלים $\\text{lo}=0^n, \\text{hi}=1^n$ ומבצעים $n$ איטרציות: $\\text{mid}=\\lfloor(\\text{lo}+\\text{hi})/2\\rfloor$; אם $N'(y,\\text{mid})=1$ מציבים $\\text{hi}=\\text{mid}$, אחרת $\\text{lo}=\\text{mid}$.</li>
+                <li>בסיום מגדירים $\\tilde{x} = \\text{lo}$, מחשבים דטרמיניסטית $f(\\tilde{x})$ ומחזירים $\\tilde{x}$ רק אם $f(\\tilde{x})=y$ (אחרת מחזירים <bdi dir="ltr">fail</bdi>).</li>
+              </ul>
+            </li>
+            <li><strong>נכונות מוחלטת ותוחלת זמן:</strong> המכונה $M$ מריצה את $\\text{Attempt}(y)$ בלולאה עד הצלחה, ולכן כשהיא עוצרת הפלט בוודאות מקיים $f(\\hat{x})=y$. בניסיון אחד מתבצעות $n+1$ שאילתות ל-$N'$. לפי <bdi dir="ltr">Union Bound</bdi>, הסיכוי שלפחות שאילתה אחת טועה הוא לכל היותר $(n+1)\\cdot \\frac{1}{10n} \\le \\frac{1}{5}$ (עבור $n$ גדול). לכן הסיכוי להצלחה הוא לפחות $4/5$ (או $9/10$ בהתאמת קבוע), ותוחלת מספר הניסיונות היא $\\le 1/(9/10) = O(1)$.</li>
+          </ol>
+        `
+      },
+      {
+        id: `wq3`,
+        category: `NL ומקום`,
+        source: `מועד א' 2021 · שאלה 3ב`,
+        title: `הגדירו $\\text{EXACT\\_PATH} = \\{\\langle G,s,t,k \\rangle : \\text{המסלול הקצר ביותר מ-}s\\text{ ל-}t\\text{ הוא באורך }k\\text{ בדיוק}\\}$. הוכיחו כי $\\text{EXACT\\_PATH} \\le_\\ell L_{\\text{TMls}}$ (בלי לבנות רדוקציה מפורשת!).`,
+        hint: `רמז: מהסעיף הקודם $L_{\\text{TMls}}$ היא $\\text{NL}$-שלמה. לכן מספיק להוכיח ש-$\\text{EXACT\\_PATH} \\in \\text{NL}$! איך בודקים גם שיש מסלול באורך $k$ וגם שאין מסלול באורך $\\le k-1$ ב-$\\text{NL}$?`,
+        solution: `
+          <ol class="detail-list">
+            <li><strong>הסתמכות על שלמות:</strong> מסעיף א' ידוע ש-$L_{\\text{TMls}}$ היא $\\text{NL}$-שלמה (תחת $\\le_\\ell$). לכן, כדי להוכיח $\\text{EXACT\\_PATH} \\le_\\ell L_{\\text{TMls}}$, די להוכיח כי $\\text{EXACT\\_PATH} \\in \\text{NL}$.</li>
+            <li><strong>פירוק לשני תנאים ב-$\\text{NL}$:</strong> מסלול קצר ביותר הוא באורך $k$ אם ורק אם: (א) קיים מסלול מ-$s$ ל-$t$ באורך לכל היותר $k$, וגם (ב) <strong>לא</strong> קיים מסלול מ-$s$ ל-$t$ באורך לכל היותר $k-1$.</li>
+            <li><strong>שייכות של תנאי (א) ל-$\\text{NL}$:</strong> מכונה א"ד מנסה לנחש צעד אחר צעד קודקודים $v_0=s, v_1, \\dots, v_k$ (תוך שמירת הקודקוד הנוכחי ומונה צעדים עד $k$ ב-$O(\\log n)$ זיכרון) ומקבלת אם הגיעה ל-$t$.</li>
+            <li><strong>שייכות של תנאי (ב) ל-$\\text{NL}$:</strong> הבעיה "האם קיים מסלול באורך $\\le k-1$" היא ב-$\\text{NL}$, ולפי משפט אימרמן-סלפצ'ני ($\\text{NL} = \\text{coNL}$) גם השפה המשלימה שלה ("לא קיים מסלול באורך $\\le k-1$") היא ב-$\\text{NL}$!</li>
+            <li><strong>חיבור:</strong> מחלקת $\\text{NL}$ סגורה תחת חיתוך (מריצים את מ"ט (א) ואם קיבלה מריצים את מ"ט (ב) תוך שימוש חוזר בזיכרון הלוגריתמי). לכן $\\text{EXACT\\_PATH} \\in \\text{NL}$ ומתקיים $\\text{EXACT\\_PATH} \\le_\\ell L_{\\text{TMls}}$.</li>
+          </ol>
+        `
+      },
+      {
+        id: `wq4`,
+        category: `מעגלים`,
+        source: `מועד א' 2023 · שאלה 3 (ב+ג+ד)`,
+        title: `שפרו את חסם גודל המעגלים לכל פונקציה בוליאנית ל-$8\\cdot 2^n - 4$, והוכיחו ש-$\\text{SIZE}(n^2) \\subsetneq \\text{SIZE}(n^3)$.`,
+        hint: `רמז: השתמשו ברקורסיית שאנון $S(n) \\le 2S(n-1)+4$ מהמולטיפלקסר. לאחר מכן ספרו פונקציות שתלויות רק ב-$\\lceil 2.1 \\log n \\rceil$ ביטים הראשונים והשוו למספר המעגלים בגודל $cn^2$.`,
+        solution: `
+          <ol class="detail-list">
+            <li><strong>חסם עליון $8\\cdot 2^n - 4$:</strong> מסעיף א', בעזרת מעגלי צמצום $C_0, C_1$ לפונקציות $f_b(x_1,\\dots,x_{n-1})=f(x_1,\\dots,x_{n-1},b)$ ומולטיפלקסר של 4 שערים ($(\\neg x_n \\land C_0) \\lor (x_n \\land C_1)$), מתקבל $S(n) \\le 2S(n-1)+4$. בסיס $n=1$: $S(1) \\le 12 = 8\\cdot 2^1 - 4$. באינדוקציה: $S(n) \\le 2(8\\cdot 2^{n-1}-4)+4 = 8\\cdot 2^n - 4 = O(2^n)$.</li>
+            <li><strong>ספירת פונקציות תלויות רישא:</strong> נגדיר $k(n) = \\lceil 2.1 \\log_2 n \\rceil$. מספר הפונקציות מ-$\\{0,1\\}^n \\to \\{0,1\\}$ שתלויות רק ב-$k(n)$ הביטים הראשונים הוא $2^{2^{k(n)}} \\ge 2^{n^{2.1}}$.</li>
+            <li><strong>ספירת מעגלים קטנים:</strong> לכל שער יש 3 סוגים ועד $(n+s)^2$ בחירות כניסה, לכן מספר המעגלים מגודל $\\le s$ הוא לכל היותר $(s+1)\\cdot 3^s (n+s)^{2s} = 2^{O(s\\log(n+s))}$. עבור $s = cn^2$, נקבל $2^{O(c n^2 \\log n)}$.</li>
+            <li><strong>פונקציה שאינה ב-$\\text{SIZE}(n^2)$:</strong> לכל קבוע $c$, עבור $n$ גדול דיו מתקיים $n^{2.1} > K c n^2 \\log n$, ולכן יש פונקציה תלוית רישא שלא ניתנת לחישוב בגודל $cn^2$. בלכסון על $c = 1, 2, 3, \\dots$ עבור אורכים הולכים וגדלים (או בחירת פונקציה קשה לכל $n$ מספיק גדול עבור $c_n$), מקבלים $f \\notin \\text{SIZE}(n^2)$.</li>
+            <li><strong>הפרדת $\\text{SIZE}(n^2) \\subsetneq \\text{SIZE}(n^3)$:</strong> כל פונקציה התלויה ב-$k(n)$ ביטים בלבד ניתנת לחישוב (לפי החסם $O(2^{k(n)})$ שהוכחנו!) ע"י מעגל בגודל $O(2^{\\lceil 2.1\\log n \\rceil}) = O(n^{2.1}) \\subseteq O(n^3)$. לכן $f \\in \\text{SIZE}(n^3) \\setminus \\text{SIZE}(n^2)$.</li>
+          </ol>
+        `
+      },
+      {
+        id: `wq5`,
+        category: `חיפוש ואקראיות`,
+        source: `מועד ב' 2024 · שאלה 1`,
+        title: `תהא $^*\\text{BPP}$ מחלקת השפות שלהן מ"ט אקראית שמחזירה תשובה נכונה בהסתברות $\\ge 2/3$ ותוחלת זמן הריצה שלה פולינומית. הוכיחו או הפריכו: $^*\\text{BPP} = \\text{BPP}$.`,
+        hint: `רמז: הטענה נכונה! השתמשו באי-שוויון מרקוב כדי לקטוע מכונת $^*\\text{BPP}$ אחרי מספר פולינומי של צעדים (עלות שגיאה קטנה), ואז הגבירו מחדש.`,
+        solution: `
+          <ol class="detail-list">
+            <li><strong>הכלה $\\text{BPP} \\subseteq {}^*\\text{BPP}$:</strong> מיידי — כל מ"ט שזמן הריצה שלה חסום במקרה הגרוע בפולינום $p(n)$, גם תוחלת הזמן שלה חסומה ב-$p(n)$.</li>
+            <li><strong>הכלה $^\\ast\\text{BPP} \\subseteq \\text{BPP}$:</strong> תהא $L \\in {}^*\\text{BPP}$ עם מכונה $M$ שזמן הריצה המקרי שלה $T_x$ מקיים $\\mathbb{E}[T_x] \\le p(|x|)$ והסתברות השגיאה $\\le 1/3$.</li>
+            <li><strong>קטיעה ואי-שוויון מרקוב:</strong> נגדיר מ"ט $M'$ המריצה את $M(x)$ למשך לכל היותר $10 \\cdot p(|x|)$ צעדים. אם $M$ לא עצרה, $M'$ עוצרת ומחזירה $0$. לפי אי-שוויון מרקוב: $\\Pr[T_x > 10\\cdot p(|x|)] \\le \\frac{\\mathbb{E}[T_x]}{10\\cdot p(|x|)} \\le \\frac{1}{10}$.</li>
+            <li><strong>ניתוח שגיאה והגברה:</strong> לפי <bdi dir="ltr">Union Bound</bdi>, הסתברות השגיאה של $M'$ היא לכל היותר $\\frac{1}{3} + \\frac{1}{10} = \\frac{13}{30} < \\frac{1}{2}$ (הפער מ-$1/2$ הוא קבוע $\\frac{2}{30} = \\frac{1}{15}$). כעת $M'$ רצה בזמן פולינומי במקרה הגרוע, ומספיק להריץ אותה מספר קבוע מתאים של פעמים ולקחת רוב כדי להחזיר את השגיאה להיות $\\le 1/3$. לכן $L \\in \\text{BPP}$.</li>
+          </ol>
+        `
+      }
+    ];
+
+    const FLASHCARDS = [
+      { id: 1, topic: `שיעור 1`, q: `מהו ההבדל בין הגדרת <bdi dir="ltr">P</bdi> להגדרת <bdi dir="ltr">NP</bdi>, ומדוע כל שפה ב-<bdi dir="ltr">P</bdi> היא ב-<bdi dir="ltr">NP</bdi>?`, a: `ב-<bdi dir="ltr">NP</bdi> קיימים פולינומים $l,q$ ומ"ט $M$ בזמן $l$ כך ש-$x \\in L \\iff \\exists y \\in \\{0,1\\}^{q(|x|)}\\; M(x,y)=1$. עבור $L \\in \\text{P}$, בוחרים $q \\equiv 0$ ($y = \\lambda$ מחרוזת ריקה) ו-$M'=M_L$ שמתעלמת מהפסיק.` },
+      { id: 2, topic: `שיעור 1`, q: `כיצד הופכים אורקל להכרעה של <bdi dir="ltr">SAT</bdi> לאלגוריתם חיפוש למציאת השמה מספקת?`, a: `בכל איטרציה מציבים במשתנה הבא $x_i = 0$ (או $1$), מפשטים את $\\varphi$ ושואלים את האורקל אם הנוסחה שנותרה ספיקה. אם כן — מקבעים $x_i=0$, אחרת $x_i=1$. סה"כ $n$ קריאות אורקל.` },
+      { id: 3, topic: `שיעור 2`, q: `נסחו את משפט ההיררכיה הדטרמיניסטי בזמן (Hartmanis–Stearns).`, a: `אם $f,g$ פונקציות <bdi dir="ltr">time-constructible</bdi> המקיימות $f(n)\\log f(n) = o(g(n))$, אזי $\\text{DTIME}(f(n)) \\subsetneq \\text{DTIME}(g(n))$.` },
+      { id: 4, topic: `שיעור 2`, q: `מהי המסקנה המרכזית ממשפט בייקר–גיל–סולוביי (1975)?`, a: `קיימים אורקלים $A,B$ כך ש-$\\text{P}^A = \\text{NP}^A$ ו-$\\text{P}^B \\neq \\text{NP}^B$. לכן שום הוכחה "רלטיבית" (שעובדת באופן זהה גם בנוכחות אורקל שרירותי) אינה יכולה להכריע האם $\\text{P}=\\text{NP}$.` },
+      { id: 5, topic: `שיעור 3`, q: `מדוע גרף הקונפיגורציות $G_{M,x}$ עבור מכונה בזיכרון $S(n) \\ge \\log n$ מכיל $2^{O(S(n))}$ צמתים?`, a: `כי קונפיגורציה נקבעת ע"י מצב הבקרה ($O(1)$), מיקום ראש הקלט ($\\log n \\le O(S(n))$ ביטים), מיקום ראש העבודה ($O(\\log S(n))$ ביטים) ותוכן סרט העבודה ($O(S(n))$ ביטים). סה"כ אורך ייצוג $O(S(n))$, ולכן $2^{O(S(n))}$ אפשרויות.` },
+      { id: 6, topic: `שיעור 3`, q: `מה קובע משפט סאביץ', ומה עלות הסיבוכיות שלו?`, a: `$\\text{NSPACE}(S(n)) \\subseteq \\text{DSPACE}(S^2(n))$ לכל $S(n) \\ge \\log n$ בניה-במקום. אלגוריתם <bdi dir="ltr">Reach(u,v,i)</bdi> חוצה את אורך המסלול לשניים בכל קריאה רקורסיבית בעומק $\\log(2^{O(S(n))}) = O(S(n))$, וכל רמה שומרת קודקוד אמצעי בגודל $O(S(n))$.` },
+      { id: 7, topic: `שיעור 4`, q: `מהם שלושת התנאים לכך שפונקציה $f$ היא רדוקציה בזיכרון לוגריתמי מובלע ($\\le_\\ell$)?`, a: `(1) $|f(x)|$ חסום ע"י פולינום ב-$|x|$, (2) $L_f = \\{\\langle x,i \\rangle : f(x)[i]=1\\} \\in \\text{DL}$, (3) $L'_f = \\{\\langle x,i \\rangle : |f(x)| \\ge i\\} \\in \\text{DL}$.` },
+      { id: 8, topic: `שיעור 4`, q: `איך מוודאת מכונת אימרמן-סלפצ'ני את $c_i$ (מספר הצמתים הישיגים בעד $i$ צעדים) ב-<bdi dir="ltr">NL</bdi>?`, a: `בעזרת $c_{i-1}$: עוברת בלולאה על כל צמתי הגרף $v_1,\\dots,v_n$. לכל $v_j$ עוברת על $c_{i-1}$ צמתים ישיגים בעד $i-1$ צעדים (מנחשת מסלול מ-$s$ אליהם; אם הצליחה בודקת אם זה $v_j$ או שכן של $v_j$). אם ספרה פחות מ-$c_{i-1}$ וההנחה היא ש-$v_j$ אינו ישיג — דוחה (מונע הונאה א"ד!).` },
+      { id: 9, topic: `שיעור 5`, q: `מהי המחלקה $\\text{PH}$, ומתי היא קורסת לרמה $k$?`, a: `$\\text{PH} = \\bigcup_{k \\ge 1} \\Sigma_k^P$, כש-$\\Sigma_k^P$ היא עם $k$ כמתים מתחלפים החל מ-$\\exists$. אם $\\Sigma_k^P = \\Pi_k^P$ אזי $\\text{PH} = \\Sigma_k^P$.` },
+      { id: 10, topic: `שיעור 6`, q: `איך מרכיבים מעגל ל-$g(x_1,\\dots,x_n)$ משני מעגלים $C_0, C_1$ בגודל $\\le d$ עבור $x_n=0,1$?`, a: `מחשבים $(\\neg x_n \\land C_0(x_1,\\dots,x_{n-1})) \\lor (x_n \\land C_1(x_1,\\dots,x_{n-1}))$. תוספת השערים היא בדיוק 4: שער NOT אחד, שני AND ו-OR אחד, סה"כ $2d+4$ עם <bdi dir="ltr">fan-out</bdi> תקין ($\\le 2$).` },
+      { id: 11, topic: `שיעור 6`, q: `נסחו את משפט קארפ-ליפטון (Karp–Lipton).`, a: `אם $\\text{NP} \\subseteq \\text{P/poly}$, אזי $\\text{PH} = \\Sigma_2^P$ (ההיררכיה הפולינומית קורסת לרמה השנייה).` },
+      { id: 12, topic: `שיעור 8`, q: `מהו הרעיון בלמת שוורץ–זיפל הממקמת את $\\text{ZeroP}$ ב-<bdi dir="ltr">coRP</bdi>?`, a: `פולינום לא-אפס מדרגה $\\le d$ מעל שדה גדול $S$ יכול להתאפס לכל היותר בחלק $d/|S|$ מהנקודות. בהגרלת נקודה אקראית: אם $P \\equiv 0$ תמיד נקבל $0$ (נחזיר 1); אם $P \\not\\equiv 0$ נקבל ערך $\\neq 0$ בהסתברות $\\ge 1 - d/|S|$.` },
+      { id: 13, topic: `שיעור 8`, q: `מדוע $\\text{PP} \\subseteq \\text{P}^{\\#\\text{SAT}}$?`, a: `עבור $L \\in \\text{PP}$ ומכונה $M$ המשתמשת ב-$r(|x|)$ מטבעות, הופכים את חישוב $M(x;r)$ לנוסחת CNF $\\varphi_x$ (קוק-לווין, התאמה חד-חד ערכית לעדים המספקים) ושואלים אורקל $\\#\\text{SAT}$ האם מספר ההשמות המספקות הוא לפחות $2^{r(|x|)-1} + 1$.` },
+      { id: 14, topic: `שיעור 9`, q: `כיצד מוכיחים את משפט אדלמן: $\\text{BPP} \\subseteq \\text{P/poly}$?`, a: `מגבירים את השגיאה של מכונת $\\text{BPP}$ ע"י צ'רנוף כך שלכל קלט באורך $n$, $\\Pr_r[M(x;r)\\text{ errs}] < 2^{-n}$. ב-<bdi dir="ltr">Union Bound</bdi> על כל $2^n$ הקלטים באורך $n$, ההסתברות ש-$r$ אקראי יטעה על לפחות קלט אחד קטנה מ-1, לכן קיימת מחרוזת עצה טובה $r^*$ המוטמעת במעגל $C_n$.` },
+      { id: 15, topic: `שיעור 9`, q: `תארו בקצרה את פרוטוקול <bdi dir="ltr">IP</bdi> לאי-איזומורפיזם של גרפים ($\\text{GNI}$).`, a: `בהינתן $(G_0, G_1)$, המוודא מגריל $b \\in \\{0,1\\}$ ופרמוטציה $\\pi$ ושולח למוכיח את $H = \\pi(G_b)$. המוכיח מחזיר $b'$. אם $G_0 \\not\\cong G_1$, המוכיח מזהה תמיד $b'=b$ (שלמות 1); אם $G_0 \\cong G_1$, אין מידע ב-$H$ והמוכיח מצליח לכל היותר ב-$1/2$ מהמקרים.` },
+      { id: 16, topic: `שיעור 10`, q: `מה בודק המוודא בכל שלב $i$ בפרוטוקול <bdi dir="ltr">Sum-Check</bdi>?`, a: `מקבל פולינום חד-משתני $s_i(X_i)$ מדרגה $\\le d$, בודק ש-$s_i(0)+s_i(1) = K_{i-1}$ (בפולינום הראשון מול הטענה $K_0$, ובהמשך מול $s_{i-1}(r_{i-1})$), מגריל $r_i \\in \\mathbb{F}_p$ ושולח למוכיח.` },
+      { id: 17, topic: `שיעור 11`, q: `מהי שיטת התוחלת המותנית (Conditional Expectations) בדה-רנדומיזציה של <bdi dir="ltr">MAX-3SAT</bdi>?`, a: `השמה אקראית אחידה נותנת תוחלת $7/8 \\cdot m$ פסוקיות מסופקות. עוברים משתנה אחר משתנה $x_1,\\dots,x_n$; בכל צעד מחשבים בדיוק את התוחלת המותנית כש-$x_i=0$ וכש-$x_i=1$, ובוחרים את הערך שנותן תוחלת גדולה יותר (שתמיד $\\ge$ התוחלת הנוכחית).` },
+      { id: 18, topic: `שיעור 12`, q: `נסחו את משפט ה-<bdi dir="ltr">PCP</bdi> והגדירו מהם הפרמטרים $r(n)$ ו-$q(n)$.`, a: `$\\text{NP} = \\text{PCP}(O(\\log n), O(1))$. $r(n)$ הוא מספר המטבעות האקראיים שהמוודא מגריל, ו-$q(n)$ הוא מספר הביטים המקסימלי שהמוודא קורא מההוכחה $\\pi$ באופן לא-אדפטיבי (שלמות 1, נאותות $\\le 1/2$).` }
+    ];
+
+    const EXAM_CHECKLIST_ITEMS = [
+      { id: `chk1`, text: `אורך תשובה: לשמור כל סעיף בין חצי עמוד לעמוד אחד לכל היותר (חריגה מעמוד עלולה לא להיבדק!).` },
+      { id: `chk2`, text: `שימוש במשפטי כיתה: מותר להסתמך עליהם רק בתנאי שמנסחים אותם בבירור בפתרון.` },
+      { id: `chk3`, text: `תרגילי בית: אסור להסתמך על תוצאות מתרגילי הבית — אם צריך תוצאה ממטלה, חייבים להוכיח אותה.` },
+      { id: `chk4`, text: `אסטרטגיית "לא יודע/ת": אם נתקעים לגמרי בסעיף, כתיבת "לא יודע/ת" מזכה ב-20% מניקוד הסעיף!` },
+      { id: `chk5`, text: `הוכחת רדוקציה מלאה: (1) הגדרת הפונקציה $f$, (2) הוכחת זמן/מקום פולינומי/לוגריתמי, (3) תקפות בשני הכיוונים ($\\Rightarrow$ ו-$\\Leftarrow$).` },
+      { id: `chk6`, text: `הוכחות NL: לוודא תמיד שסופרים מונים/אינדקסים ב-$O(\\log n)$ ביטים ושאין שמירת מערך צמתים או מסלול שלם.` },
+      { id: `chk7`, text: `הוכחות BPP/RP: לציין במפורש מתי משתמשים בחסם צ'רנוף, מתי באי-שוויון מרקוב ומתי ב-Union Bound.` },
+      { id: `chk8`, text: `מעגלים וריפוד: לבדוק מקרי קצה ($n=1$, פורמט שגוי של מחרוזת מרופדת, וזניחות פולינומית מול אקספוננציאלית).` }
+    ];
+
+    /* ============================================================
+       2. APPLICATION STATE & PERSISTENCE
+       ============================================================ */
+    let appState = {
+      selectedClass: `DL`,
+      selectedTopicId: 1,
+      viewMode: `all`,
+      clusterFilter: `all`,
+      searchQuery: ``,
+      workedFilter: `all`,
+      completedTopics: [],
+      fcIndex: 0,
+      fcFlipped: false,
+      fcFilter: `all`,
+      fcRatings: {},
+      checkedExamItems: [],
+      notes: ``
+    };
+
+    let saveTimer = null;
+
+    function setSyncStatus(text) {
+      const el = document.getElementById(`sync-status`);
+      if (el) el.textContent = text;
+    }
+
+    async function persistState() {
+      setSyncStatus(`שומר התקדמות...`);
+      try {
+        if (window.notebookAppApi && typeof window.notebookAppApi.setAppState === `function`) {
+          await window.notebookAppApi.setAppState(appState);
+        }
+        setSyncStatus(`מצב שמירה: מעודכן`);
+      } catch (err) {
+        setSyncStatus(`מצב שמירה: מקומי`);
+      }
+    }
+
+    function schedulePersist() {
+      if (saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(function() {
+        persistState();
+      }, 250);
+    }
+
+    /* ============================================================
+       3. MATH & RENDER HELPERS
+       ============================================================ */
+    function renderMathSafe(rootEl) {
+      if (!rootEl) return;
+      if (typeof window.renderMathInElement === `function`) {
+        try {
+          window.renderMathInElement(rootEl, {
+            delimiters: [
+              { left: `$$`, right: `$$`, display: true },
+              { left: `$`, right: `$`, display: false }
+            ],
+            throwOnError: false
+          });
+        } catch (e) {
+          // Graceful fallback if KaTeX fails
+        }
+      }
+    }
+
+    function updateKPIs() {
+      const completedCount = appState.completedTopics.length;
+      const totalTopics = COURSE_TOPICS.length;
+      const topicsPct = Math.round((completedCount / totalTopics) * 100);
+
+      const kpiTopics = document.getElementById(`kpi-topics`);
+      const kpiTopicsPct = document.getElementById(`kpi-topics-pct`);
+      const barTopics = document.getElementById(`bar-topics`);
+      if (kpiTopics) kpiTopics.textContent = `${completedCount} / ${totalTopics}`;
+      if (kpiTopicsPct) kpiTopicsPct.textContent = `${topicsPct}% מהשיעורים סומנו כמוכנים`;
+      if (barTopics) barTopics.style.width = `${topicsPct}%`;
+
+      let knownCount = 0;
+      FLASHCARDS.forEach(function(c) {
+        if (appState.fcRatings[c.id] === `known`) knownCount += 1;
+      });
+      const cardsPct = Math.round((knownCount / FLASHCARDS.length) * 100);
+      const kpiCards = document.getElementById(`kpi-cards`);
+      const barCards = document.getElementById(`bar-cards`);
+      if (kpiCards) kpiCards.textContent = `${knownCount} / ${FLASHCARDS.length}`;
+      if (barCards) barCards.style.width = `${cardsPct}%`;
+
+      const checkedCount = appState.checkedExamItems.length;
+      const chkPct = Math.round((checkedCount / EXAM_CHECKLIST_ITEMS.length) * 100);
+      const kpiChk = document.getElementById(`kpi-checklist`);
+      const barChk = document.getElementById(`bar-checklist`);
+      if (kpiChk) kpiChk.textContent = `${checkedCount} / ${EXAM_CHECKLIST_ITEMS.length}`;
+      if (barChk) barChk.style.width = `${chkPct}%`;
+    }
+
+    /* ============================================================
+       4. COMPLEXITY MAP INSPECTOR
+       ============================================================ */
+    function selectComplexityClass(classKey) {
+      if (!COMPLEXITY_CLASSES[classKey]) return;
+      appState.selectedClass = classKey;
+      const nodes = document.querySelectorAll(`.class-node`);
+      nodes.forEach(function(node) {
+        if (node.dataset.class === classKey) {
+          node.classList.add(`is-selected`);
+        } else {
+          node.classList.remove(`is-selected`);
+        }
+      });
+
+      const info = COMPLEXITY_CLASSES[classKey];
+      const inspector = document.getElementById(`class-inspector`);
+      if (inspector) {
+        inspector.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+            <span class="dossier-pill">מחלקה נבחרת</span>
+            <span class="index-num">${classKey}</span>
+          </div>
+          <h3 class="section-heading" style="margin-top:var(--space-sm); font-size:1.4rem;">${info.name}</h3>
+          <div style="background:var(--surface-container); padding:var(--space-sm) var(--space-md); border-radius:var(--rounded); margin:var(--space-sm) 0; font-size:0.95rem;">
+            <strong>הגדרה פורמלית:</strong> <span dir="ltr">${info.formal}</span>
+          </div>
+          <p style="margin:0 0 var(--space-sm);">${info.desc}</p>
+          <p style="margin:0 0 var(--space-sm);"><strong>דוגמאות מרכזיות:</strong> ${info.examples}</p>
+          <p style="margin:0;"><strong>הכלות והפרדות:</strong> ${info.relations}</p>
+        `;
+        renderMathSafe(inspector);
+      }
+      schedulePersist();
+    }
+
+    /* ============================================================
+       5. TOPICS MASTER-DETAIL EXPLORER
+       ============================================================ */
+    function getFilteredTopics() {
+      const q = appState.searchQuery.trim().toLowerCase();
+      return COURSE_TOPICS.filter(function(t) {
+        const matchCluster = appState.clusterFilter === `all` || t.cluster === appState.clusterFilter;
+        if (!matchCluster) return false;
+        if (!q) return true;
+        const haystack = `${t.title} ${t.summary} ${t.definitions.join(` `)} ${t.theorems.join(` `)} ${t.examFocus}`.toLowerCase();
+        return haystack.indexOf(q) !== -1;
+      });
+    }
+
+    function renderTopicsList() {
+      const container = document.getElementById(`topic-list-container`);
+      const countLabel = document.getElementById(`topics-count-label`);
+      if (!container) return;
+
+      const filtered = getFilteredTopics();
+      if (countLabel) {
+        countLabel.textContent = `מציג ${filtered.length} מתוך ${COURSE_TOPICS.length} שיעורים`;
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="figure-card">
+            <p style="margin:0 0 var(--space-sm);">לא נמצאו שיעורים התואמים לחיפוש הנוכחי.</p>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="clearSearchAndFilters()">נקה חיפוש וסינון</button>
+          </div>
+        `;
+        const detail = document.getElementById(`topic-detail-container`);
+        if (detail) {
+          detail.innerHTML = `<p style="margin:0; color:var(--on-surface-variant);">בחרו שיעור מהרשימה כדי להציג את סיכומו, המשפטים המרכזיים וטיפים מהמבחנים.</p>`;
+        }
+        return;
+      }
+
+      const selectedExists = filtered.some(function(t) { return t.id === appState.selectedTopicId; });
+      if (!selectedExists) {
+        appState.selectedTopicId = filtered[0].id;
+      }
+
+      let html = ``;
+      filtered.forEach(function(t) {
+        const isSelected = t.id === appState.selectedTopicId;
+        const isDone = appState.completedTopics.indexOf(t.id) !== -1;
+        const paddedId = t.id < 10 ? `0${t.id}` : `${t.id}`;
+        html += `
+          <button type="button" class="topic-item ${isSelected ? `is-selected` : ``}" onclick="selectTopic(${t.id})">
+            <div class="topic-item-main">
+              <div class="topic-item-meta">
+                <span class="index-num">${paddedId}</span>
+                <span class="tag-chip slate">${t.clusterLabel}</span>
+                ${isDone ? `<span class="tag-chip done">נלמד</span>` : ``}
+              </div>
+              <div class="topic-item-title">${t.title}</div>
+            </div>
+          </button>
+        `;
+      });
+      container.innerHTML = html;
+      renderSelectedTopicDetail();
+    }
+
+    function renderSelectedTopicDetail() {
+      const detail = document.getElementById(`topic-detail-container`);
+      if (!detail) return;
+
+      const topic = COURSE_TOPICS.find(function(t) { return t.id === appState.selectedTopicId; }) || COURSE_TOPICS[0];
+      const isDone = appState.completedTopics.indexOf(topic.id) !== -1;
+      const paddedId = topic.id < 10 ? `0${topic.id}` : `${topic.id}`;
+
+      const defsHtml = topic.definitions.map(function(d) { return `<li>${d}</li>`; }).join(``);
+      const thmsHtml = topic.theorems.map(function(th) { return `<li>${th}</li>`; }).join(``);
+
+      detail.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:var(--space-sm); flex-wrap:wrap;">
+          <div>
+            <div style="display:flex; align-items:center; gap:var(--space-sm); margin-bottom:var(--space-xs);">
+              <span class="index-num">שיעור ${paddedId}</span>
+              <span class="tag-chip slate">${topic.clusterLabel}</span>
+            </div>
+            <h3 class="section-heading" style="font-size:1.5rem;">${topic.title}</h3>
+          </div>
+          <button type="button" class="btn ${isDone ? `btn-secondary` : `btn-primary`}" onclick="toggleTopicComplete(${topic.id})">
+            ${isDone ? `סומן כנלמד (בטל סימון)` : `סמן שיעור כנלמד`}
+          </button>
+        </div>
+
+        <p style="margin:0; font-size:1.02rem;">${topic.summary}</p>
+
+        <div class="detail-block">
+          <h3>הגדרות ומושגי יסוד</h3>
+          <ul class="detail-list">${defsHtml}</ul>
+        </div>
+
+        <div class="detail-block">
+          <h3>משפטים ותוצאות מרכזיות</h3>
+          <ul class="detail-list">${thmsHtml}</ul>
+        </div>
+
+        <div class="exam-tip-callout">
+          <strong>דגש וטיפים מתוך מבחנים ומטלות:</strong><br>
+          ${topic.examFocus}
+        </div>
+      `;
+      renderMathSafe(detail);
+    }
+
+    function selectTopic(topicId) {
+      appState.selectedTopicId = topicId;
+      renderTopicsList();
+      schedulePersist();
+    }
+
+    function toggleTopicComplete(topicId) {
+      const idx = appState.completedTopics.indexOf(topicId);
+      if (idx === -1) {
+        appState.completedTopics.push(topicId);
+      } else {
+        appState.completedTopics.splice(idx, 1);
+      }
+      renderTopicsList();
+      updateKPIs();
+      schedulePersist();
+    }
+
+    /* ============================================================
+       6. EXAM PATTERNS & WORKED QUESTIONS
+       ============================================================ */
+    function renderPatterns() {
+      const container = document.getElementById(`patterns-grid-container`);
+      if (!container) return;
+
+      const q = appState.searchQuery.trim().toLowerCase();
+      const filtered = EXAM_PATTERNS.filter(function(p) {
+        if (!q) return true;
+        return `${p.title} ${p.exams} ${p.recipe}`.toLowerCase().indexOf(q) !== -1;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="figure-card"><p style="margin:0;">לא נמצאו דפוסי מבחן התואמים לחיפוש.</p></div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(function(p) {
+        return `
+          <article class="figure-card pattern-card">
+            <div>
+              <div class="pattern-header">
+                <span class="index-num">${p.num}</span>
+                <span class="tag-chip">${p.exams}</span>
+              </div>
+              <h3 class="pattern-title" style="margin-top:var(--space-sm);">${p.title}</h3>
+              <p style="margin:var(--space-sm) 0 0; font-size:0.94rem;">${p.recipe}</p>
+            </div>
+          </article>
+        `;
+      }).join(``);
+      renderMathSafe(container);
+    }
+
+    function renderWorkedQuestions() {
+      const container = document.getElementById(`worked-exam-container`);
+      if (!container) return;
+
+      const q = appState.searchQuery.trim().toLowerCase();
+      const filtered = WORKED_QUESTIONS.filter(function(w) {
+        const matchCat = appState.workedFilter === `all` || w.category === appState.workedFilter;
+        if (!matchCat) return false;
+        if (!q) return true;
+        return `${w.title} ${w.source} ${w.hint} ${w.solution}`.toLowerCase().indexOf(q) !== -1;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="figure-card"><p style="margin:0;">לא נמצאו שאלות מבחן פתורות התואמות לסינון הנוכחי.</p></div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(function(w) {
+        return `
+          <article class="worked-card">
+            <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:var(--space-xs); align-items:center;">
+              <span class="tag-chip">${w.source}</span>
+              <span class="tag-chip slate">${w.category}</span>
+            </div>
+            <h4 style="margin:var(--space-xs) 0 0; font-family:var(--font-headline); font-size:1.18rem;">${w.title}</h4>
+            <div class="worked-actions">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="toggleWorkedBox('${w.id}-hint', this)">הצג רמז לפתרון</button>
+              <button type="button" class="btn btn-primary btn-sm" onclick="toggleWorkedBox('${w.id}-sol', this)">הצג הוכחה מלאה</button>
+            </div>
+            <div id="${w.id}-hint" class="reveal-box is-hidden">${w.hint}</div>
+            <div id="${w.id}-sol" class="reveal-box solution-box is-hidden">${w.solution}</div>
+          </article>
+        `;
+      }).join(``);
+      renderMathSafe(container);
+    }
+
+    function filterWorkedQuestions(cat, btnEl) {
+      appState.workedFilter = cat;
+      const pills = document.querySelectorAll(`#worked-filter-row .filter-pill`);
+      pills.forEach(function(p) { p.classList.remove(`is-active`); });
+      if (btnEl) btnEl.classList.add(`is-active`);
+      renderWorkedQuestions();
+    }
+
+    function toggleWorkedBox(boxId, btnEl) {
+      const box = document.getElementById(boxId);
+      if (!box) return;
+      const isNowHidden = box.classList.toggle(`is-hidden`);
+      if (btnEl) {
+        if (boxId.indexOf(`-hint`) !== -1) {
+          btnEl.textContent = isNowHidden ? `הצג רמז לפתרון` : `הסתר רמז`;
+        } else {
+          btnEl.textContent = isNowHidden ? `הצג הוכחה מלאה` : `הסתר הוכחה`;
+        }
+      }
+      if (!isNowHidden) {
+        renderMathSafe(box);
+      }
+    }
+
+    /* ============================================================
+       7. FLASHCARDS DECK
+       ============================================================ */
+    function getActiveFlashcardList() {
+      if (appState.fcFilter === `review`) {
+        const list = FLASHCARDS.filter(function(c) {
+          return appState.fcRatings[c.id] !== `known`;
+        });
+        return list.length > 0 ? list : FLASHCARDS;
+      }
+      return FLASHCARDS;
+    }
+
+    function renderFlashcards() {
+      const list = getActiveFlashcardList();
+      if (appState.fcIndex >= list.length) appState.fcIndex = 0;
+      if (appState.fcIndex < 0) appState.fcIndex = list.length - 1;
+
+      const card = list[appState.fcIndex];
+      const stage = document.getElementById(`flashcard-stage`);
+      const counter = document.getElementById(`fc-counter`);
+      const topicTag = document.getElementById(`fc-topic-tag`);
+      const statusTag = document.getElementById(`fc-status-tag`);
+      const body = document.getElementById(`fc-body`);
+      const hintFooter = document.getElementById(`fc-hint-footer`);
+
+      if (stage) {
+        if (appState.fcFlipped) {
+          stage.classList.add(`is-flipped`);
+        } else {
+          stage.classList.remove(`is-flipped`);
+        }
+      }
+      const numStr = appState.fcIndex + 1 < 10 ? `0${appState.fcIndex + 1}` : `${appState.fcIndex + 1}`;
+      if (counter) counter.textContent = `${numStr} / ${list.length}`;
+      if (topicTag) topicTag.textContent = card.topic;
+
+      const rating = appState.fcRatings[card.id];
+      if (statusTag) {
+        if (rating === `known`) {
+          statusTag.textContent = `יודע/ת היטב`;
+          statusTag.className = `tag-chip done`;
+        } else if (rating === `review`) {
+          statusTag.textContent = `לשנן שוב`;
+          statusTag.className = `tag-chip`;
+        } else {
+          statusTag.textContent = `ממתינה לחזרה`;
+          statusTag.className = `tag-chip`;
+        }
+      }
+
+      if (body) {
+        body.innerHTML = appState.fcFlipped
+          ? `<div style="font-size:0.82rem; font-weight:700; color:var(--secondary); margin-bottom:var(--space-xs);">תשובה / רעיון ההוכחה:</div><div>${card.a}</div>`
+          : `<div style="font-size:0.82rem; font-weight:700; color:var(--tertiary); margin-bottom:var(--space-xs);">שאלה לחזרה:</div><div style="font-weight:600; font-size:1.18rem;">${card.q}</div>`;
+        renderMathSafe(body);
+      }
+      if (hintFooter) {
+        hintFooter.textContent = appState.fcFlipped
+          ? `סמנו למטה אם אתם שולטים בכרטיסייה או מעדיפים לחזור עליה`
+          : `לחצו על הכרטיסייה או על Enter כדי לחשוף את התשובה`;
+      }
+
+      const miniIndex = document.getElementById(`fc-mini-index`);
+      if (miniIndex) {
+        miniIndex.innerHTML = list.map(function(c, idx) {
+          const isCurr = idx === appState.fcIndex;
+          const r = appState.fcRatings[c.id];
+          let bg = `var(--surface-container-low)`;
+          let fg = `var(--on-surface)`;
+          let border = `var(--outline-variant)`;
+          if (r === `known`) {
+            bg = `var(--positive-soft)`;
+            fg = `var(--positive)`;
+            border = `var(--positive)`;
+          } else if (r === `review`) {
+            bg = `var(--warning-soft)`;
+            fg = `var(--warning)`;
+            border = `var(--warning)`;
+          }
+          if (isCurr) {
+            bg = `var(--primary)`;
+            fg = `var(--on-primary)`;
+            border = `var(--primary)`;
+          }
+          return `<button type="button" onclick="goToFlashcard(${idx})" style="min-width:36px; min-height:36px; border-radius:4px; border:1.5px solid ${border}; background:${bg}; color:${fg}; font-weight:700; cursor:pointer;">${idx + 1}</button>`;
+        }).join(``);
+      }
+
+      const btnAll = document.getElementById(`fc-filter-all`);
+      const btnRev = document.getElementById(`fc-filter-review`);
+      if (btnAll && btnRev) {
+        btnAll.classList.toggle(`is-active`, appState.fcFilter === `all`);
+        btnRev.classList.toggle(`is-active`, appState.fcFilter === `review`);
+      }
+    }
+
+    function flipFlashcard() {
+      appState.fcFlipped = !appState.fcFlipped;
+      renderFlashcards();
+    }
+
+    function handleFlashcardKey(evt) {
+      if (evt.key === `Enter` || evt.key === ` `) {
+        evt.preventDefault();
+        flipFlashcard();
+      }
+    }
+
+    function nextFlashcard() {
+      const list = getActiveFlashcardList();
+      appState.fcIndex = (appState.fcIndex + 1) % list.length;
+      appState.fcFlipped = false;
+      renderFlashcards();
+    }
+
+    function prevFlashcard() {
+      const list = getActiveFlashcardList();
+      appState.fcIndex = (appState.fcIndex - 1 + list.length) % list.length;
+      appState.fcFlipped = false;
+      renderFlashcards();
+    }
+
+    function goToFlashcard(idx) {
+      appState.fcIndex = idx;
+      appState.fcFlipped = false;
+      renderFlashcards();
+    }
+
+    function rateFlashcard(rating) {
+      const list = getActiveFlashcardList();
+      const card = list[appState.fcIndex];
+      if (!card) return;
+      appState.fcRatings[card.id] = rating;
+      updateKPIs();
+      nextFlashcard();
+      schedulePersist();
+    }
+
+    function setFlashcardFilter(mode) {
+      appState.fcFilter = mode;
+      appState.fcIndex = 0;
+      appState.fcFlipped = false;
+      renderFlashcards();
+    }
+
+    /* ============================================================
+       8. EXAM CHECKLIST & PERSONAL NOTES
+       ============================================================ */
+    function renderExamChecklist() {
+      const container = document.getElementById(`exam-checklist-container`);
+      if (!container) return;
+
+      container.innerHTML = EXAM_CHECKLIST_ITEMS.map(function(item) {
+        const checked = appState.checkedExamItems.indexOf(item.id) !== -1;
+        return `
+          <label class="check-row">
+            <input type="checkbox" ${checked ? `checked` : ``} onchange="toggleExamCheck('${item.id}')">
+            <span>${item.text}</span>
+          </label>
+        `;
+      }).join(``);
+      renderMathSafe(container);
+    }
+
+    function toggleExamCheck(id) {
+      const idx = appState.checkedExamItems.indexOf(id);
+      if (idx === -1) {
+        appState.checkedExamItems.push(id);
+      } else {
+        appState.checkedExamItems.splice(idx, 1);
+      }
+      updateKPIs();
+      schedulePersist();
+    }
+
+    function saveNotesNow() {
+      const textarea = document.getElementById(`personal-notes-input`);
+      const toast = document.getElementById(`notes-save-toast`);
+      if (textarea) {
+        appState.notes = textarea.value;
+      }
+      persistState();
+      if (toast) {
+        toast.textContent = `ההערות נשמרו בהצלחה`;
+        setTimeout(function() {
+          toast.textContent = ``;
+        }, 2500);
+      }
+    }
+
+    /* ============================================================
+       9. VIEW NAVIGATION, SEARCH, EXPORT & RESET
+       ============================================================ */
+    function setViewMode(mode) {
+      appState.viewMode = mode;
+      const chips = document.querySelectorAll(`.nav-chip`);
+      chips.forEach(function(chip) {
+        chip.classList.toggle(`is-active`, chip.dataset.view === mode);
+      });
+      const sections = document.querySelectorAll(`.hub-section`);
+      sections.forEach(function(sec) {
+        const match = mode === `all` || sec.dataset.section === mode;
+        sec.classList.toggle(`is-hidden`, !match);
+      });
+      schedulePersist();
+    }
+
+    function jumpToSection(sectionId) {
+      if (appState.viewMode !== `all`) {
+        setViewMode(`all`);
+      }
+      const el = document.getElementById(sectionId);
+      if (el) {
+        el.scrollIntoView({ behavior: `smooth`, block: `start` });
+      }
+    }
+
+    function handleSearchInput(val) {
+      appState.searchQuery = val || ``;
+      renderTopicsList();
+      renderPatterns();
+      renderWorkedQuestions();
+    }
+
+    function handleClusterChange(val) {
+      appState.clusterFilter = val || `all`;
+      renderTopicsList();
+      schedulePersist();
+    }
+
+    function clearSearchAndFilters() {
+      appState.searchQuery = ``;
+      appState.clusterFilter = `all`;
+      const searchEl = document.getElementById(`global-search`);
+      const selectEl = document.getElementById(`topic-cluster-select`);
+      if (searchEl) searchEl.value = ``;
+      if (selectEl) selectEl.value = `all`;
+      renderTopicsList();
+      renderPatterns();
+      renderWorkedQuestions();
+    }
+
+    function exportStudySummary() {
+      const completedNames = COURSE_TOPICS
+        .filter(function(t) { return appState.completedTopics.indexOf(t.id) !== -1; })
+        .map(function(t) { return `- [V] שיעור ${t.id}: ${t.title}`; });
+
+      const pendingNames = COURSE_TOPICS
+        .filter(function(t) { return appState.completedTopics.indexOf(t.id) === -1; })
+        .map(function(t) { return `- [ ] שיעור ${t.id}: ${t.title}`; });
+
+      let knownCount = 0;
+      FLASHCARDS.forEach(function(c) {
+        if (appState.fcRatings[c.id] === `known`) knownCount += 1;
+      });
+
+      const lines = [
+        `סיכום התקדמות בקורס סיבוכיות חישוב (7081110-01)`,
+        `===================================================`,
+        `שיעורים שנלמדו: ${completedNames.length} מתוך ${COURSE_TOPICS.length}`,
+        `כרטיסיות שסומנו כ"יודע/ת": ${knownCount} מתוך ${FLASHCARDS.length}`,
+        `פריטי צ'ק-ליסט בחינה שסומנו: ${appState.checkedExamItems.length} מתוך ${EXAM_CHECKLIST_ITEMS.length}`,
+        ``,
+        `שיעורים מוכנים:`,
+        completedNames.length ? completedNames.join(`\n`) : `(טרם סומנו שיעורים)`,
+        ``,
+        `שיעורים שנותרו לחזרה:`,
+        pendingNames.length ? pendingNames.join(`\n`) : `(כל השיעורים סומנו כמוכנים!)`,
+        ``,
+        `הערות אישיות למבחן:`,
+        appState.notes ? appState.notes : `(אין הערות שמורות)`
+      ];
+
+      const content = lines.join(`\n`);
+      if (window.notebookAppApi && typeof window.notebookAppApi.triggerFileDownload === `function`) {
+        window.notebookAppApi.triggerFileDownload({
+          content: content,
+          contentType: `text/plain`,
+          encoding: `UTF-8`,
+          filename: `complexity_7081110_study_summary.txt`
+        });
+      }
+    }
+
+    function handleResetProgress(btn) {
+      if (!btn) return;
+      if (btn.dataset.armed !== `true`) {
+        btn.dataset.armed = `true`;
+        btn.textContent = `לחצו שוב לאישור איפוס`;
+        setTimeout(function() {
+          if (btn.dataset.armed === `true`) {
+            btn.dataset.armed = `false`;
+            btn.textContent = `איפוס התקדמות`;
+          }
+        }, 4000);
+        return;
+      }
+      btn.dataset.armed = `false`;
+      btn.textContent = `איפוס התקדמות`;
+
+      appState.completedTopics = [];
+      appState.fcRatings = {};
+      appState.checkedExamItems = [];
+      appState.notes = ``;
+      appState.fcIndex = 0;
+      appState.fcFlipped = false;
+
+      const textarea = document.getElementById(`personal-notes-input`);
+      if (textarea) textarea.value = ``;
+
+      renderTopicsList();
+      renderFlashcards();
+      renderExamChecklist();
+      updateKPIs();
+      persistState();
+    }
+
+    /* ============================================================
+       10. INITIALIZATION
+       ============================================================ */
+    async function initApp() {
+      try {
+        if (window.notebookAppApi && typeof window.notebookAppApi.getAppState === `function`) {
+          const saved = await window.notebookAppApi.getAppState();
+          if (saved && typeof saved === `object`) {
+            if (saved.selectedClass && COMPLEXITY_CLASSES[saved.selectedClass]) appState.selectedClass = saved.selectedClass;
+            if (typeof saved.selectedTopicId === `number`) appState.selectedTopicId = saved.selectedTopicId;
+            if (typeof saved.viewMode === `string`) appState.viewMode = saved.viewMode;
+            if (typeof saved.clusterFilter === `string`) appState.clusterFilter = saved.clusterFilter;
+            if (Array.isArray(saved.completedTopics)) appState.completedTopics = saved.completedTopics;
+            if (saved.fcRatings && typeof saved.fcRatings === `object`) appState.fcRatings = saved.fcRatings;
+            if (Array.isArray(saved.checkedExamItems)) appState.checkedExamItems = saved.checkedExamItems;
+            if (typeof saved.notes === `string`) appState.notes = saved.notes;
+          }
+        }
+      } catch (e) {
+        // Proceed with default initial state
+      }
+
+      const clusterSelect = document.getElementById(`topic-cluster-select`);
+      if (clusterSelect) clusterSelect.value = appState.clusterFilter;
+
+      const notesInput = document.getElementById(`personal-notes-input`);
+      if (notesInput) {
+        notesInput.value = appState.notes;
+        notesInput.addEventListener(`input`, function() {
+          appState.notes = notesInput.value;
+          schedulePersist();
+        });
+      }
+
+      selectComplexityClass(appState.selectedClass);
+      setViewMode(appState.viewMode);
+      renderTopicsList();
+      renderPatterns();
+      renderWorkedQuestions();
+      renderFlashcards();
+      renderExamChecklist();
+      updateKPIs();
+      renderMathSafe(document.body);
+
+      if (window.notebookAppApi && typeof window.notebookAppApi.notifyAppReady === `function`) {
+        window.notebookAppApi.notifyAppReady();
+      }
+    }
+
+    document.addEventListener(`DOMContentLoaded`, initApp);
+  </script>
+</body>
+</html>
